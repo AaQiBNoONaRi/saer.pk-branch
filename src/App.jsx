@@ -15,8 +15,11 @@ import BranchEmployeeManagement from './pages/BranchEmployeeManagement';
 import FlightInventory from './pages/FlightInventory';
 import HotelInventory from './pages/HotelInventory';
 import PackageInventory from './pages/PackageInventory';
+// import TicketInventory from './pages/TicketInventory';
 import TicketInventory from './pages/TicketInventory';
 import BookingHistory from './pages/BookingHistory';
+import Payments from './pages/Payments';
+import AddBankAccount from './pages/AddBankAccount';
 
 // --- SHARED UI COMPONENTS ---
 
@@ -226,6 +229,7 @@ const App = () => {
   const [branchData, setBranchData] = useState(null);
   const [currentPage, setCurrentPage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [editingAccount, setEditingAccount] = useState(null);
 
   // Check authentication on mount
   useEffect(() => {
@@ -273,6 +277,28 @@ const App = () => {
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
       case 'Booking History': return <BookingHistory />;
+      case 'Booking History': return <BookingHistory />;
+      case 'Payments': return (
+        <Payments
+          onAddAccount={() => {
+            setEditingAccount(null);
+            setCurrentPage('Payments/Add');
+          }}
+          onEditAccount={(acc) => {
+            setEditingAccount(acc);
+            setCurrentPage('Payments/Add');
+          }}
+        />
+      );
+      case 'Payments/Add': return (
+        <AddBankAccount
+          onBack={() => {
+            setEditingAccount(null);
+            setCurrentPage('Payments');
+          }}
+          editingAccount={editingAccount}
+        />
+      );
 
       // Default / Placeholder
       default: return (
@@ -312,7 +338,7 @@ const App = () => {
               <h2 className="text-xs font-black uppercase tracking-[3px] text-slate-400 mb-1">Current Section</h2>
               <div className="flex items-center space-x-2">
                 <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  {currentPage.includes('/') ? currentPage.split('/')[1] : currentPage}
+                  {currentPage.includes('/') ? currentPage.split('/')[1].replace('Add', 'Add New') : currentPage}
                 </span>
                 <ChevronRight size={16} className="text-slate-300" />
                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg">LIVE PORTAL</span>

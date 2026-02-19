@@ -103,6 +103,14 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             <DropdownItem label="Tickets" active={activeTab === 'Inventory/Tickets'} onClick={() => handleNavClick('Inventory/Tickets')} />
                             <DropdownItem label="Flights" active={activeTab === 'Inventory/Flights'} onClick={() => handleNavClick('Inventory/Flights')} />
                         </NavDropdown>
+
+                        <NavItem
+                            icon={<CreditCard size={20} />}
+                            label="Payments"
+                            active={activeTab === 'Payments'}
+                            onClick={() => handleNavClick('Payments')}
+                            isOpen={isSidebarOpen}
+                        />
                     </NavGroup>
 
                     <NavGroup title="Operations" isOpen={isSidebarOpen}>
