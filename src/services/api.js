@@ -178,6 +178,16 @@ export const agencyAPI = {
     delete: async (id) => {
         const response = await api.delete(`/api/agencies/${id}`);
         return response.data;
+    },
+
+    /**
+     * Get agency statistics
+     * @param {string} id - Agency ID
+     * @returns {Promise} Stats object with bookings and payment data
+     */
+    getStats: async (id) => {
+        const response = await api.get(`/api/agencies/${id}/stats`);
+        return response.data;
     }
 };
 
