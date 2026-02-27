@@ -11,7 +11,7 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
     const [isBookingsOpen, setBookingsOpen] = useState(false);
     const [isEntitiesOpen, setEntitiesOpen] = useState(false);
     const [isUserMenuOpen, setUserMenuOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(false); 
     const [userData, setUserData] = useState(null);
 
     // Sync mobile state

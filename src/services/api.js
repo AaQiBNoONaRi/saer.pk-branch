@@ -48,7 +48,7 @@ export const branchAuthAPI = {
      */
     login: async (email, password) => {
         const response = await api.post('/api/branches/login', {
-            email,
+            username: email,   // backend field is `username` but accepts email or username
             password,
         });
 

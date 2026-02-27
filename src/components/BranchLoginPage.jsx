@@ -42,7 +42,13 @@ export default function BranchLoginPage({ onLogin }) {
                     setErrorMessage(detail);
                 }
             } else if (error.response?.data?.detail) {
-                setErrorMessage(error.response.data.detail);
+                const detail = error.response.data.detail;
+                if (Array.isArray(detail)) {
+                    // Pydantic 422 validation errors — extract the msg field
+                    setErrorMessage(detail.map(d => d.msg || JSON.stringify(d)).join(', '));
+                } else {
+                    setErrorMessage(typeof detail === 'string' ? detail : 'Login failed. Please try again.');
+                }
             } else {
                 setErrorMessage('Unable to connect to server. Please try again.');
             }
