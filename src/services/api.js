@@ -100,9 +100,9 @@ export const branchAuthAPI = {
      * @param {string} empId
      * @param {string} password
      */
-    loginEmployee: async (empId, password) => {
-        const response = await api.post('/api/employees/login', {
-            emp_id: empId,
+    loginEmployee: async (email, password) => {
+        const response = await api.post('/api/employees/login-email', {
+            email,
             password,
         });
 
@@ -177,6 +177,16 @@ export const agencyAPI = {
      */
     delete: async (id) => {
         const response = await api.delete(`/api/agencies/${id}`);
+        return response.data;
+    },
+
+    /**
+     * Get agency statistics
+     * @param {string} id - Agency ID
+     * @returns {Promise} Stats object with bookings and payment data
+     */
+    getStats: async (id) => {
+        const response = await api.get(`/api/agencies/${id}/stats`);
         return response.data;
     }
 };

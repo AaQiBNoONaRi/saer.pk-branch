@@ -12,6 +12,12 @@ const AgencyManagement = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedAgency, setSelectedAgency] = useState(null);
     const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'add', 'edit'
+    const [agencyStats, setAgencyStats] = useState({
+        total_bookings: 0,
+        on_time_payments: 0,
+        late_payments: 0,
+        disputes: 0
+    });
 
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('all');
@@ -60,6 +66,29 @@ const AgencyManagement = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const fetchAgencyStats = async (agencyId) => {
+        try {
+            const stats = await agencyAPI.getStats(agencyId);
+            setAgencyStats(stats);
+        } catch (err) {
+            console.error("Failed to fetch agency stats", err);
+            // Keep default values if fetch fails
+            setAgencyStats({
+                total_bookings: 0,
+                on_time_payments: 0,
+                late_payments: 0,
+                disputes: 0
+            });
+        }
+    };
+
+    const handleViewAgencyDetails = (agency) => {
+        setSelectedAgency(agency);
+        setViewMode('detail');
+        // Fetch stats for this agency
+        fetchAgencyStats(agency._id || agency.id);
     };
 
     const handleConfirmDelete = async (agency) => {
@@ -301,7 +330,7 @@ const AgencyManagement = () => {
                             {filteredAgencies.map(agency => (
                                 <div
                                     key={agency._id || agency.id}
-                                    onClick={() => { setSelectedAgency(agency); setViewMode('detail'); }}
+                                    onClick={() => handleViewAgencyDetails(agency)}
                                     className="p-6 rounded-2xl border border-slate-100 cursor-pointer transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 bg-white"
                                 >
                                     <div className="flex justify-between items-start mb-3">
@@ -531,10 +560,10 @@ const AgencyManagement = () => {
                 </div>
 
                 <div className="grid grid-cols-4 gap-4 mb-8">
-                    <StatCard icon={Briefcase} label="Total Bookings" value="0" color="blue" />
-                    <StatCard icon={CheckCircle2} label="On-Time Payments" value="0" color="green" />
-                    <StatCard icon={Clock} label="Late Payments" value="0" color="amber" />
-                    <StatCard icon={AlertTriangle} label="Disputes" value="0" color="red" />
+                    <StatCard icon={Briefcase} label="Total Bookings" value={agencyStats.total_bookings} color="blue" />
+                    <StatCard icon={CheckCircle2} label="On-Time Payments" value={agencyStats.on_time_payments} color="green" />
+                    <StatCard icon={Clock} label="Late Payments" value={agencyStats.late_payments} color="amber" />
+                    <StatCard icon={AlertTriangle} label="Disputes" value={agencyStats.disputes} color="red" />
                 </div>
 
                 <div className="border-t border-slate-100 pt-6">
