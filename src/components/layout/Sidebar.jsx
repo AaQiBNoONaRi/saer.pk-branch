@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-    LayoutDashboard, Box, Users, UsersRound, ScanLine,
-    ShieldCheck, Truck, ClipboardList, LogOut, UserCircle,
-    ChevronUp, ChevronDown, CreditCard, Landmark, Menu, X,
-    Building2, Ticket, TrendingUp, Settings, Package, Plane, History
+    LayoutDashboard, Ticket, Package, Users, CreditCard, BarChart3, Settings,
+    ChevronUp, ChevronDown, LogOut, UserCircle, X, History,
+    BookOpen, PieChart, FileText, ClipboardList, Shield, TrendingUp, Plane, UsersRound
 } from 'lucide-react';
 import { branchAuthAPI } from '../../services/api';
 
 export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSidebarOpen, setIsLoggedIn }) {
+    const [isUserMenuOpen, setUserMenuOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [isBookingsOpen, setBookingsOpen] = useState(false);
     const [isEntitiesOpen, setEntitiesOpen] = useState(false);
     const [isUserMenuOpen, setUserMenuOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false); 
+    const [isMobile, setIsMobile] = useState(false);
     const [userData, setUserData] = useState(null);
 
-    // Sync mobile state
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 1024;
@@ -27,86 +27,64 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
         return () => window.removeEventListener('resize', checkMobile);
     }, [setSidebarOpen]);
 
-    useEffect(() => {
-        const user = branchAuthAPI.getUserData();
-        setUserData(user);
-    }, []);
-
     const handleNavClick = (tab) => {
         setActiveTab(tab);
         if (isMobile) setSidebarOpen(false);
     };
 
-    const handleLogout = () => {
-        branchAuthAPI.logout();
-        setIsLoggedIn(false);
-    };
+    const branchName = localStorage.getItem('branch_name') || 'Branch';
 
     return (
         <>
-            {/* 1. Backdrop Overlay for Mobile */}
             {isSidebarOpen && isMobile && (
                 <div
-                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[45] transition-opacity duration-300"
+                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[45] transition-opacity duration-300 print:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
-            {/* 2. Main Sidebar Container */}
             <aside
-                className={`fixed inset-y-0 left-0 lg:relative z-[50] flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out shrink-0 overflow-hidden shadow-xl lg:shadow-none
+                className={`print:hidden fixed inset-y-0 left-0 lg:relative z-[50] flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out shrink-0 overflow-hidden shadow-xl lg:shadow-none
                 ${isSidebarOpen ? 'w-72 translate-x-0' : isMobile ? 'w-72 -translate-x-full' : 'w-20 translate-x-0'}`}
             >
-                {/* Logo Section */}
-                <div className="p-6 flex items-center justify-between shrink-0 h-24 border-b border-slate-50">
+                {/* Logo */}
+                <div className="p-6 flex items-center justify-between shrink-0 h-20">
                     <div className="flex items-center gap-3 overflow-hidden min-w-0">
-                        <div className={`w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0 transition-all ${!isSidebarOpen && 'mx-auto'}`}>
-                            <Building2 size={20} />
-                        </div>
-                        {isSidebarOpen && (
+                        {isSidebarOpen ? (
                             <div className="flex flex-col animate-in fade-in zoom-in-95 duration-300">
-                                <h1 className="text-xl font-black text-blue-600 uppercase tracking-tighter">
-                                    Saer<span className="text-slate-400">.Pk</span>
-                                </h1>
+                                <img src="/logo.png" alt="Saer.Pk" className="h-12 w-auto object-contain" />
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center w-full">
+                                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shrink-0">S</div>
                             </div>
                         )}
                     </div>
-                    {isSidebarOpen && isMobile && (
+                    {isMobile && (
                         <button onClick={() => setSidebarOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
                             <X size={20} />
                         </button>
                     )}
                 </div>
 
-                {/* Scrollable Navigation Area */}
-                <nav className="flex-1 overflow-y-auto px-4 space-y-4 py-6 scrollbar-hide">
-                    <NavGroup title="Core Business" isOpen={isSidebarOpen}>
-                        <NavItem
-                            icon={<LayoutDashboard size={20} />}
-                            label="Dashboard"
-                            active={activeTab === 'Dashboard'}
-                            onClick={() => handleNavClick('Dashboard')}
-                            isOpen={isSidebarOpen}
-                        />
+                {/* Nav */}
+                <nav className="flex-1 overflow-y-auto px-4 space-y-4 pb-4 scrollbar-hide">
+                    <NavGroup title="Main Menu" isOpen={isSidebarOpen}>
+                        <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => handleNavClick('Dashboard')} isOpen={isSidebarOpen} />
 
+                        {/* Bookings dropdown — matches agency exactly */}
                         <NavDropdown
                             icon={<Ticket size={20} />}
                             label="Bookings"
                             isOpen={isSidebarOpen}
                             isExpanded={isBookingsOpen}
                             onClick={() => setBookingsOpen(!isBookingsOpen)}
-                            active={['Bookings', 'Inventory/Packages', 'Inventory/Hotels', 'Inventory/Flights', 'Inventory/Tickets'].includes(activeTab)}
+                            active={['Custom Umrah', 'Custom Umrah Booking', 'Umrah Package', 'Umrah Package Booking', 'Ticket'].includes(activeTab)}
                         >
-                            <DropdownItem label="All Bookings" active={activeTab === 'Bookings'} onClick={() => handleNavClick('Bookings')} />
-                            <DropdownItem label="Packages" active={activeTab === 'Inventory/Packages'} onClick={() => handleNavClick('Inventory/Packages')} />
-                            <DropdownItem label="Hotels" active={activeTab === 'Inventory/Hotels'} onClick={() => handleNavClick('Inventory/Hotels')} />
-                            <DropdownItem label="Tickets" active={activeTab === 'Inventory/Tickets'} onClick={() => handleNavClick('Inventory/Tickets')} />
-                            <DropdownItem label="Flights" active={activeTab === 'Inventory/Flights'} onClick={() => handleNavClick('Inventory/Flights')} />
+                            <DropdownItem label="Custom Umrah" active={activeTab === 'Custom Umrah' || activeTab === 'Custom Umrah Booking'} onClick={() => handleNavClick('Custom Umrah')} />
+                            <DropdownItem label="Umrah Package" active={activeTab === 'Umrah Package' || activeTab === 'Umrah Package Booking'} onClick={() => handleNavClick('Umrah Package')} />
+                            <DropdownItem label="Ticket" active={activeTab === 'Ticket'} onClick={() => handleNavClick('Ticket')} />
                         </NavDropdown>
-                    </NavGroup>
-
-                    <NavGroup title="Operations" isOpen={isSidebarOpen}>
-                        <NavItem icon={<Plane size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
 
                         <NavDropdown
                             icon={<UsersRound size={20} />}
@@ -119,54 +97,48 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             <DropdownItem label="Agencies" active={activeTab === 'Agencies'} onClick={() => handleNavClick('Agencies')} />
                             <DropdownItem label="Employees" active={activeTab === 'Employees'} onClick={() => handleNavClick('Employees')} />
                         </NavDropdown>
-                    </NavGroup>
 
-                    <NavGroup title="CRM & Reports" isOpen={isSidebarOpen}>
+                        <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
+                        <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
                         <NavItem icon={<History size={20} />} label="Booking History" active={activeTab === 'Booking History'} onClick={() => handleNavClick('Booking History')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<UsersRound size={20} />} label="Customers" active={activeTab === 'Customers'} onClick={() => handleNavClick('Customers')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<TrendingUp size={20} />} label="Reports" active={activeTab === 'Reports'} onClick={() => handleNavClick('Reports')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'Settings'} onClick={() => handleNavClick('Settings')} isOpen={isSidebarOpen} />
+                        <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
                     </NavGroup>
                 </nav>
 
-                {/* Footer Profile Section */}
+                {/* Footer */}
                 <div className="p-4 border-t bg-slate-50 shrink-0 relative">
                     {isUserMenuOpen && isSidebarOpen && (
                         <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-200 z-[60]">
-                            {/*  Profile Setup - Optional
-                            <button onClick={() => { handleNavClick('Settings'); setUserMenuOpen(false); }} className="w-full flex items-center space-x-3 p-4 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 text-left">
-                                <UserCircle size={18} className="text-slate-400" />
-                                <span>Profile Setup</span>
-                            </button>
-                            */}
-                            <button onClick={handleLogout} className="w-full flex items-center space-x-3 p-4 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors text-left">
+                            <button
+                                onClick={() => {
+                                    branchAuthAPI?.logout?.();
+                                    setIsLoggedIn(false);
+                                    setUserMenuOpen(false);
+                                }}
+                                className="w-full flex items-center space-x-3 p-4 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors text-left"
+                            >
                                 <LogOut size={18} />
                                 <span>Logout</span>
                             </button>
                         </div>
                     )}
-
                     <div
                         className={`flex items-center p-2 rounded-2xl transition-all cursor-pointer hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 ${!isSidebarOpen ? 'justify-center' : ''}`}
                         onClick={() => isSidebarOpen && setUserMenuOpen(!isUserMenuOpen)}
                     >
                         <div className="flex items-center space-x-3 min-w-0">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold shadow-lg shrink-0 uppercase">
-                                {userData?.username?.substring(0, 2) || userData?.name?.substring(0, 2) || 'BR'}
+                                {branchName.substring(0, 2)}
                             </div>
                             {isSidebarOpen && (
                                 <div className="min-w-0 transition-opacity duration-200">
-                                    <p className="text-xs font-black text-slate-800 uppercase truncate">
-                                        {userData?.name || userData?.branch_name || userData?.username || 'Branch User'}
-                                    </p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">
-                                        {userData?.role === 'branch' ? 'Branch Manager' : userData?.role || 'User'}
-                                    </p>
+                                    <p className="text-xs font-black text-slate-800 uppercase truncate">{branchName}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">Branch Portal</p>
                                 </div>
                             )}
                         </div>
                         {isSidebarOpen && (
-                            <ChevronUp size={16} className={`ml-auto text-slate-300 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
+                            <ChevronUp size={16} className={`text-slate-300 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
                         )}
                     </div>
                 </div>

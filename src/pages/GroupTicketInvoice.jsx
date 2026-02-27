@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
     Printer, Download, ArrowLeft,
     Globe, Plane, Circle
@@ -9,22 +9,22 @@ const SectionHeading = ({ title }) => (
 );
 
 const PassengerCard = ({ number, name, pnr, fare }) => (
-    <div className="border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 hover:shadow-md transition-shadow bg-white">
+    <div className="border border-slate-200 rounded-2xl p-2 flex flex-col md:flex-row justify-between items-center gap-4 hover:shadow-md transition-shadow bg-white">
         <div className="flex items-center gap-6 w-full md:w-auto">
             <div className="text-center min-w-[60px]">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pex NO</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pax NO</p>
                 <p className="text-2xl font-black text-slate-800">{String(number).padStart(2, '0')}</p>
             </div>
             <div className="w-[1px] h-10 bg-slate-100"></div>
             <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Traveler Name</p>
-                <p className="text-base font-bold text-slate-800 uppercase underline decoration-slate-300 underline-offset-4">{name}</p>
+                <p className="text-base font-bold text-slate-800 uppercase underline decoration-slate-300 underline-offset-4">{name || 'UNKNOWN'}</p>
             </div>
         </div>
         <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
             <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Agency PNR</p>
-                <p className="text-sm font-bold text-slate-800 underline decoration-slate-300 underline-offset-4">{pnr}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Booking PNR</p>
+                <p className="text-sm font-bold text-slate-800 underline decoration-slate-300 underline-offset-4">{pnr || 'N/A'}</p>
             </div>
             <div className="text-right">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fare</p>
@@ -35,11 +35,35 @@ const PassengerCard = ({ number, name, pnr, fare }) => (
 );
 
 export default function GroupTicketInvoice({ booking, onBack }) {
-    const passengers = booking?.passengers || [
-        { name: 'BILAL AHMAD MUHAMMAD NASIR', pnr: '95LAHD', fare: 'Rs 120,000/' },
-        { name: 'ARSLAN BILAL BILAL AHMAD', pnr: '95LAHD', fare: 'Rs 120,000/' },
-        { name: 'BEENISH BILAL', pnr: 'RNIO85', fare: 'Rs 120,000/' },
-    ];
+    // Graceful extraction with defaults
+    const b = booking || {};
+    const agency = b.agency_details || {};
+    const branch = b.branch_details || {};
+    const flight = b.ticket_details || {};
+    const passengers = b.passengers || [];
+
+    // Financial calculations
+    const rawTotal = b.grand_total || b.total_amount || 0;
+    const paidAmount = b.payment_status === 'paid' ? rawTotal : 0;
+    const pendingAmount = rawTotal - paidAmount;
+
+    const formattedTotal = Number(rawTotal).toLocaleString();
+    const formattedPaid = Number(paidAmount).toLocaleString();
+    const formattedPending = Number(pendingAmount).toLocaleString();
+
+    // Flight detail defaults
+    const depTime = flight.departure_time || '00:00';
+    const depDate = flight.departure_date ? new Date(flight.departure_date).toLocaleDateString() : 'TBD';
+    const arrTime = flight.arrival_time || '00:00';
+    const arrDate = flight.arrival_date ? new Date(flight.arrival_date).toLocaleDateString() : depDate;
+
+    // Sector separation
+    const sectorRaw = flight.sector || 'LHE-JED';
+    const sectorParts = sectorRaw.split('-');
+    const origin = sectorParts[0] || 'Origin';
+    const destination = sectorParts[1] || 'Destination';
+
+    const pnr = flight.pnr_no || b.booking_reference || 'N/A';
 
     return (
         <div className="p-8 max-w-[1600px] mx-auto print:p-0">
@@ -93,20 +117,20 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">
                                 <div>
                                     <p className="text-slate-400 font-bold text-xs uppercase mb-1">Name:</p>
-                                    <p className="font-bold text-slate-800">{booking?.agencyName || '92 World travel'}</p>
+                                    <p className="font-bold text-slate-800">{b.agent_name || agency.name || branch.name || 'Saer.pk Agent'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-slate-400 font-bold text-xs uppercase mb-1">Agent Name:</p>
-                                    <p className="font-bold text-slate-800">{booking?.agentName || 'Rehan Rafique'}</p>
-                                    <p className="text-xs text-slate-500 font-medium">{booking?.agentPhone || '+923631569535'}</p>
+                                    <p className="text-slate-400 font-bold text-xs uppercase mb-1">Company:</p>
+                                    <p className="font-bold text-slate-800">{agency.company_name || agency.name || branch.name || 'Travel Agency'}</p>
+                                    <p className="text-xs text-slate-500 font-medium">{agency.phone || branch.phone || ''}</p>
                                 </div>
                                 <div>
                                     <p className="text-slate-400 font-bold text-xs uppercase mb-1">Address:</p>
-                                    <p className="font-bold text-slate-800 leading-tight">{booking?.address || 'Hilltop town, Street 78, Gujranwala'}</p>
+                                    <p className="font-bold text-slate-800 leading-tight">{agency.address || branch.address || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-slate-400 font-bold text-xs uppercase mb-1">Code:</p>
-                                    <p className="font-bold text-slate-800">{booking?.code || '9236 626262'}</p>
+                                    <p className="text-slate-400 font-bold text-xs uppercase mb-1">Ref/Code:</p>
+                                    <p className="font-bold text-slate-800">{b.booking_reference}</p>
                                 </div>
                             </div>
                         </div>
@@ -125,9 +149,9 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                                     {/* Depart */}
                                     <div className="text-center">
                                         <p className="text-sm font-bold text-slate-400 mb-1">Depart</p>
-                                        <h3 className="text-3xl font-black text-slate-800 mb-1">20:15</h3>
-                                        <p className="text-sm font-semibold text-slate-500 mb-1">October 4, 2025</p>
-                                        <p className="text-lg font-bold text-slate-800">Sialkot (SKT)</p>
+                                        <h3 className="text-3xl font-black text-slate-800 mb-1">{depTime}</h3>
+                                        <p className="text-sm font-semibold text-slate-500 mb-1">{depDate}</p>
+                                        <p className="text-lg font-bold text-slate-800">{origin}</p>
                                     </div>
 
                                     {/* Connector */}
@@ -141,16 +165,16 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                                             </div>
                                             <Circle size={8} className="text-slate-300 fill-slate-300" />
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide">1st Stop at Dubai</p>
-                                        <p className="text-[10px] font-bold text-slate-400">4h 10m</p>
+                                        {flight.airline && <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide">{flight.airline}</p>}
+                                        {flight.flight_number && <p className="text-[10px] font-bold text-slate-400">{flight.flight_number}</p>}
                                     </div>
 
                                     {/* Arrival */}
                                     <div className="text-center">
                                         <p className="text-sm font-bold text-slate-400 mb-1">Arrival</p>
-                                        <h3 className="text-3xl font-black text-slate-800 mb-1">2:15</h3>
-                                        <p className="text-sm font-semibold text-slate-500 mb-1">October 5, 2025</p>
-                                        <p className="text-lg font-bold text-slate-800">Muscat (MCT)</p>
+                                        <h3 className="text-3xl font-black text-slate-800 mb-1">{arrTime}</h3>
+                                        <p className="text-sm font-semibold text-slate-500 mb-1">{arrDate}</p>
+                                        <p className="text-lg font-bold text-slate-800">{destination}</p>
                                     </div>
                                 </div>
 
@@ -163,10 +187,10 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                                 {/* Flight Meta (Right) */}
                                 <div className="w-full md:w-64 p-8 bg-blue-50/50 flex flex-col justify-center space-y-4">
                                     {[
-                                        { label: 'Status', value: 'Confirm' },
-                                        { label: 'Class', value: 'Economy (o)' },
-                                        { label: 'PNR', value: '95LAHD' },
-                                        { label: 'Baggage', value: '30.0 KG' },
+                                        { label: 'Status', value: String(b.booking_status || 'Under Process').toUpperCase() },
+                                        { label: 'Type', value: flight.ticket_type || 'N/A' },
+                                        { label: 'PNR', value: pnr },
+                                        { label: 'Qty', value: `${b.total_passengers || 0} Seats` },
                                     ].map(({ label, value }) => (
                                         <div key={label} className="flex justify-between items-center">
                                             <span className="text-xs font-bold text-slate-400 uppercase">{label}</span>
@@ -181,15 +205,17 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                         <section>
                             <SectionHeading title="Passenger Details" />
                             <div className="space-y-4">
-                                {passengers.map((p, i) => (
+                                {passengers.length > 0 ? passengers.map((p, i) => (
                                     <PassengerCard
                                         key={i}
                                         number={i + 1}
-                                        name={p.name}
-                                        pnr={p.pnr}
-                                        fare={p.fare}
+                                        name={`${p.first_name || p.given_name || ''} ${p.last_name || p.surname || ''}`.trim()}
+                                        pnr={pnr}
+                                        fare={`PKR ${Number(b.base_price_per_person || (rawTotal / passengers.length) || 0).toLocaleString()}`}
                                     />
-                                ))}
+                                )) : (
+                                    <div className="text-sm text-slate-500 p-4 border rounded-xl text-center">No passenger profiles found</div>
+                                )}
                             </div>
                         </section>
 
@@ -198,15 +224,15 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                             <div className="w-full md:w-1/2 lg:w-1/3 space-y-4">
                                 <div className="flex justify-between items-center border-b border-blue-200 pb-4">
                                     <span className="text-sm font-bold text-slate-700">Sub Total</span>
-                                    <span className="text-lg font-bold text-slate-800 underline decoration-slate-400 underline-offset-4">Rs 360,000/</span>
+                                    <span className="text-lg font-bold text-slate-800 underline decoration-slate-400 underline-offset-4">PKR {formattedTotal}/-</span>
                                 </div>
                                 <div className="flex justify-between items-center border-b border-blue-200 pb-4">
                                     <span className="text-sm font-bold text-slate-700">Paid</span>
-                                    <span className="text-lg font-bold text-blue-600 underline decoration-blue-300 underline-offset-4">Rs 360,000/</span>
+                                    <span className="text-lg font-bold text-blue-600 underline decoration-blue-300 underline-offset-4">PKR {formattedPaid}/-</span>
                                 </div>
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-base font-black text-slate-800">Pending</span>
-                                    <span className="text-xl font-black text-slate-800 underline decoration-slate-400 underline-offset-4">Rs 0/</span>
+                                    <span className="text-xl font-black text-rose-600 underline decoration-rose-300 underline-offset-4">PKR {formattedPending}/-</span>
                                 </div>
                             </div>
                         </section>
@@ -214,7 +240,7 @@ export default function GroupTicketInvoice({ booking, onBack }) {
                         {/* Booking Date Footer */}
                         <div className="text-right pt-4">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Booking Date: <span className="text-slate-800">{booking?.bookingDate || '18/01/25'}</span>
+                                Booking Date: <span className="text-slate-800">{b.created_at ? new Date(b.created_at).toLocaleString() : 'N/A'}</span>
                             </p>
                         </div>
 
@@ -224,3 +250,4 @@ export default function GroupTicketInvoice({ booking, onBack }) {
         </div>
     );
 }
+
