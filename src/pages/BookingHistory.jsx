@@ -66,31 +66,48 @@ const CountdownTimer = ({ deadline, paymentStatus }) => {
 
 // --- Status Badge ---
 const StatusBadge = ({ status }) => {
-    // Normalize status string e.g. "under_process" -> "Pending", "confirmed" -> "Confirmed"
-    const normalized = (status || 'Pending').toLowerCase();
+    const s = String(status || 'Pending').toLowerCase();
 
     let displayStatus = 'Pending';
     let styleClass = 'bg-amber-50 text-amber-600 border-amber-100';
     let Icon = Clock;
 
-    if (normalized.includes('confirm') || normalized.includes('approved') || normalized === 'paid') {
-        displayStatus = 'Approved';
+    if (s === 'confirmed' || s === 'paid') {
+        displayStatus = 'Confirmed';
         styleClass = 'bg-emerald-50 text-emerald-600 border-emerald-100';
         Icon = CheckCircle;
-    } else if (normalized.includes('cancel') || normalized.includes('reject')) {
+    } else if (s === 'approved') {
+        displayStatus = 'Approved';
+        styleClass = 'bg-blue-50 text-blue-600 border-blue-100';
+        Icon = CheckCircle;
+    } else if (s.includes('cancel') || s.includes('reject')) {
         displayStatus = 'Cancelled';
         styleClass = 'bg-rose-50 text-rose-600 border-rose-100';
         Icon = XCircle;
-    } else if (normalized.includes('expire')) {
+    } else if (s.includes('expire')) {
         displayStatus = 'Expired';
         styleClass = 'bg-slate-50 text-slate-500 border-slate-100';
         Icon = AlertCircle;
     }
 
     return (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${styleClass}`}>
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${styleClass}`}>
             <Icon size={12} strokeWidth={2.5} />
             {displayStatus}
+        </span>
+    );
+};
+
+// --- Payment Status Badge ---
+const PaymentStatusBadge = ({ status }) => {
+    const s = String(status || 'Unpaid').toLowerCase();
+    const isPaid = s === 'paid' || s === 'completed';
+    const isPending = s === 'pending';
+
+    return (
+        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : isPending ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+            }`}>
+            {isPaid ? 'Paid' : isPending ? 'Pending' : 'Unpaid'}
         </span>
     );
 };
@@ -110,7 +127,7 @@ const TabButton = ({ label, active, onClick }) => (
     </button>
 );
 
-const TABLE_HEADERS = ['Booking Date', 'Order No.', 'Pax Name', 'Booked By', 'Expiry Timer', 'Booking Status', 'Amount', 'Action'];
+const TABLE_HEADERS = ['Date', 'Order #', 'Pax Name', 'Booked By', 'Payment', 'Status', 'Amount', 'Action'];
 
 export default function BookingHistory() {
     const [activeTab, setActiveTab] = useState('Groups Tickets');
@@ -251,6 +268,7 @@ export default function BookingHistory() {
             booked_by: b.booked_by_name || 'Branch',
             expiry,
             status,
+            payment_status: b.payment_status || 'unpaid',
             amount,
             raw: b
         };
@@ -376,7 +394,7 @@ export default function BookingHistory() {
                 {/* Table Header Row */}
                 <div className="grid grid-cols-8 gap-4 px-6 py-4 bg-slate-50 rounded-2xl mb-2 border border-slate-100">
                     {TABLE_HEADERS.map((header, idx) => (
-                        <div key={idx} className={`text-xs font-bold text-slate-400 uppercase tracking-wide ${idx === 7 ? 'text-right' : ''}`}>
+                        <div key={idx} className={`text-xs font-black text-slate-500 uppercase tracking-widest ${idx === 7 ? 'text-right pr-4' : idx === 0 ? 'text-left pl-4' : ''}`}>
                             {header}
                         </div>
                     ))}
@@ -403,39 +421,34 @@ export default function BookingHistory() {
                                 <div className="grid grid-cols-8 gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl items-center hover:shadow-md hover:border-blue-100 transition-all group">
 
                                     {/* Date */}
-                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700 whitespace-nowrap">
-                                        <Calendar size={14} className="text-slate-400" />
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700 whitespace-nowrap pl-4 text-left">
+                                        <Calendar size={13} className="text-slate-400" />
                                         {b.date}
                                     </div>
 
                                     {/* Order No/Ref */}
-                                    <div className="text-sm font-bold text-blue-600 font-mono tracking-tight" title={`ID: ${b.id}`}>
+                                    <div className="text-xs font-black text-blue-600 font-mono tracking-tighter" title={`ID: ${b.id}`}>
                                         {b.booking_reference}
                                     </div>
 
                                     {/* Pax Name */}
-                                    <div className="text-sm font-semibold text-slate-700 truncate pr-2" title={b.pax}>{b.pax}</div>
+                                    <div className="text-xs font-bold text-slate-700 truncate pr-2 text-left" title={b.pax}>{b.pax}</div>
 
                                     {/* Booked By */}
-                                    <div className="text-[11px] font-bold text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis" title={b.booked_by}>
-                                        <Users size={12} className="inline mr-1 text-slate-400" />
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-tight truncate px-1" title={b.booked_by}>
                                         {b.booked_by}
                                     </div>
 
-                                    {/* Expiry */}
-                                    <div className="text-[11px] font-mono font-bold text-slate-400">
-                                        {(b.status.toLowerCase() === 'underprocess' || b.status.toLowerCase() === 'pending' || b.status.toLowerCase() == 'under_process') ? (
-                                            <CountdownTimer deadline={b.expiry} paymentStatus={b.raw.payment_status} />
-                                        ) : (
-                                            <span className="opacity-30">-</span>
-                                        )}
+                                    {/* Payment Status */}
+                                    <div className="flex justify-center">
+                                        <PaymentStatusBadge status={b.payment_status} />
                                     </div>
 
                                     {/* Status */}
-                                    <div><StatusBadge status={b.status} /></div>
+                                    <div className="flex justify-center"><StatusBadge status={b.status} /></div>
 
                                     {/* Amount */}
-                                    <div className="text-sm font-extrabold text-slate-800">PKR {Number(b.amount || 0).toLocaleString()}</div>
+                                    <div className="text-xs font-black text-slate-900 whitespace-nowrap">PKR {Number(b.amount || 0).toLocaleString()}</div>
 
                                     {/* Actions */}
                                     <div className="flex justify-end relative">

@@ -334,7 +334,7 @@ export default function Payments({ onAddAccount, onEditAccount }) {
                                         <table className="w-full">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                    {['Date', 'Transaction #', 'Trans Type', 'Beneficiary Account (label)', 'Beneficiary Account #', 'Branch Account (label)', 'Branch Account #', 'Amount', 'Status', 'Slip'].map((h, i) => (
+                                                    {['Date', 'Booking #', 'Trans Type', 'Beneficiary Account (label)', 'Beneficiary Account #', 'Branch Account (label)', 'Branch Account #', 'Amount', 'Status', 'Slip'].map((h, i) => (
                                                         <th key={i} className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider text-left whitespace-nowrap">{h}</th>
                                                     ))}
                                                 </tr>
@@ -353,7 +353,12 @@ export default function Payments({ onAddAccount, onEditAccount }) {
                                                         return (
                                                             <tr key={p._id} className="hover:bg-slate-50 transition-colors">
                                                                 <td className="px-4 py-3 text-xs font-medium text-slate-600 whitespace-nowrap">{p.payment_date || p.created_at?.split('T')[0]}</td>
-                                                                <td className="px-4 py-3 text-xs font-mono text-slate-500">{(p._id || '').slice(-8).toUpperCase()}</td>
+                                                                <td className="px-4 py-3">
+                                                                    <p className="text-xs font-black text-blue-600 truncate max-w-[100px]" title={p.booking_reference || p.booking_id}>
+                                                                        {p.booking_reference || (p.booking_id || '').slice(-8).toUpperCase()}
+                                                                    </p>
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{p.booking_type || 'Manual'}</span>
+                                                                </td>
                                                                 <td className="px-4 py-3">
                                                                     <span className="text-[10px] font-black uppercase bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">{p.payment_method || 'bank'}</span>
                                                                 </td>

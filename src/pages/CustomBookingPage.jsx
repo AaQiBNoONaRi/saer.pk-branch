@@ -584,9 +584,9 @@ const StepThreePayment = ({
         return;
       }
 
-      const isManualPayment = ['bank', 'cheque', 'cash'].includes(paymentMethod);
+      const isManualPayment = ['bank', 'cash'].includes(paymentMethod);
 
-      if (isManualPayment && (paymentMethod === 'bank' || paymentMethod === 'cheque') && !paymentData.beneficiaryAccount) {
+      if (isManualPayment && paymentMethod === 'bank' && !paymentData.beneficiaryAccount) {
         if (!window.confirm('⚠️ No beneficiary account selected. Continue anyway?')) { setIsLoading(false); return; }
       }
 
@@ -594,31 +594,12 @@ const StepThreePayment = ({
         if (!window.confirm('⚠️ Cash deposit details incomplete. Continue anyway?')) { setIsLoading(false); return; }
       }
 
-      if (isManualPayment && (paymentMethod === 'bank' || paymentMethod === 'cheque') && !paymentData.slipFile) {
+      if (isManualPayment && paymentMethod === 'bank' && !paymentData.slipFile) {
         if (!window.confirm('⚠️ No payment slip uploaded. Continue anyway?')) { setIsLoading(false); return; }
       }
 
-      // Credit payment - Use centralized payments API for verification
-      if (paymentMethod === 'credit') {
-        const payData = new FormData();
-        payData.append('booking_id', id);
-        payData.append('booking_type', 'custom');
-        payData.append('payment_method', 'credit');
-        payData.append('amount', totalAmount);
-        payData.append('payment_date', paymentData.date);
-        if (paymentData.note) payData.append('note', paymentData.note);
 
-        const res = await fetch(`${API}/api/payments/`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: payData
-        });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Failed to process credit payment'); }
-        alert('✅ Booking confirmed via credit.');
-        setIsLoading(false); onConfirm(); return;
-      }
-
-      // Bank / Cheque / Cash - Use centralized payments API
+      // Bank / Cash - Use centralized payments API
       const formData = new FormData();
       formData.append('booking_id', id);
       formData.append('booking_type', 'custom');
@@ -758,13 +739,11 @@ const StepThreePayment = ({
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <PaymentMethodCard label="Bank Transfer" icon={<Building size={24} />} active={paymentMethod === 'bank'} onClick={() => setPaymentMethod('bank')} />
           <PaymentMethodCard label="Cash" icon={<Wallet size={24} />} active={paymentMethod === 'cash'} onClick={() => setPaymentMethod('cash')} />
-          <PaymentMethodCard label="Cheque" icon={<FileText size={24} />} active={paymentMethod === 'cheque'} onClick={() => setPaymentMethod('cheque')} />
-          <PaymentMethodCard label="Pay with Credit" icon={<CreditCard size={24} />} active={paymentMethod === 'credit'} onClick={() => setPaymentMethod('credit')} />
           <PaymentMethodCard label="KuikPay" icon={<Smartphone size={24} />} active={false} disabled={true} onClick={() => { }} />
         </div>
 
-        {/* Bank / Cheque */}
-        {(paymentMethod === 'bank' || paymentMethod === 'cheque') && (
+        {/* Bank */}
+        {(paymentMethod === 'bank') && (
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SelectField label="Beneficiary Account (Company)" options={beneficiaryAccounts.length > 0 ? beneficiaryAccounts : ['No accounts found']} value={paymentData.beneficiaryAccount} onChange={v => upd('beneficiaryAccount', v)} />

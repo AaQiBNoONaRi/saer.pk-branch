@@ -850,7 +850,7 @@ const StepThree = ({
         }
       }
 
-      if ((paymentMethod === 'bank' || paymentMethod === 'cheque') && !paymentData.agentAccount) {
+      if (paymentMethod === 'bank' && !paymentData.agentAccount) {
         if (!confirm('⚠️ No agent account selected. Continue anyway?')) {
           setIsLoading(false);
           return;
@@ -865,43 +865,15 @@ const StepThree = ({
       }
 
       // Note: Slip file is optional - just warn if missing
-      if ((paymentMethod === 'bank' || paymentMethod === 'cheque') && !slipFile) {
+      if (paymentMethod === 'bank' && !slipFile) {
         if (!confirm('⚠️ No payment slip uploaded. Continue anyway?')) {
           setIsLoading(false);
           return;
         }
       }
 
-      // For Credit Payment - Use centralized payments API for verification
-      if (paymentMethod === 'credit') {
-        const formData = new FormData();
-        formData.append('booking_id', booking._id || booking.id);
-        formData.append('booking_type', 'ticket');
-        formData.append('payment_method', 'credit');
-        formData.append('amount', totalAmount);
-        formData.append('payment_date', paymentData.date);
-        if (paymentData.note) formData.append('note', paymentData.note);
 
-        const paymentResponse = await fetch(`${API}/api/payments/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        if (!paymentResponse.ok) {
-          const errorData = await paymentResponse.json();
-          throw new Error(errorData.detail || 'Failed to process credit payment');
-        }
-
-        alert('✅ Booking confirmed! Paid with credit.');
-        setIsLoading(false);
-        onConfirm();
-        return;
-      }
-
-      // For Bank Transfer, Cash, Cheque - Create Payment Request
+      // For Bank Transfer, Cash - Create Payment Request
       const formData = new FormData();
       formData.append('booking_id', booking._id || booking.id);
       formData.append('booking_type', 'ticket');
@@ -1086,18 +1058,6 @@ const StepThree = ({
             onClick={() => setPaymentMethod('cash')}
           />
           <PaymentMethodCard
-            label="Cheque"
-            icon={<FileText size={24} />}
-            active={paymentMethod === 'cheque'}
-            onClick={() => setPaymentMethod('cheque')}
-          />
-          <PaymentMethodCard
-            label="Pay with Credit"
-            icon={<CreditCard size={24} />}
-            active={paymentMethod === 'credit'}
-            onClick={() => setPaymentMethod('credit')}
-          />
-          <PaymentMethodCard
             label="KuikPay"
             icon={<Smartphone size={24} />}
             active={false}
@@ -1107,7 +1067,7 @@ const StepThree = ({
         </div>
 
         {/* Payment Form Fields */}
-        {(paymentMethod === 'bank' || paymentMethod === 'cheque') && (
+        {paymentMethod === 'bank' && (
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SelectField
