@@ -229,8 +229,6 @@ const App = () => {
 
   // Check authentication on mount
   const [userType, setUserType] = useState('branch'); // 'branch' | 'employee'
-  const [activeTab, setActiveTab] = useState('Dashboard');
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [editingAccount, setEditingAccount] = useState(null);
 
   // Umrah Package booking state
@@ -267,124 +265,121 @@ const App = () => {
     }
   }, []);
 
-  const handleLogin = () => {
-    const data = branchAuthAPI.getUserData();
-    setBranchData(data);
-    const handleLogin = (mode = 'branch') => {
-      setBranchData(branchAuthAPI.getUserData());
-      setUserType(mode);
-      setIsLoggedIn(true);
-    };
-
-    const handleLogout = () => {
-      branchAuthAPI.logout();
-      setBranchData(null);
-      setIsLoggedIn(false);
-      setCurrentPage('Dashboard');
-    };
-
-    if (!isLoggedIn) {
-      return <BranchLoginPage onLogin={handleLogin} />;
-    }
-
-    const renderPage = () => {
-      switch (currentPage) {
-        case 'Dashboard': return <DashboardPage />;
-
-        // Inventory
-        case 'Inventory/Packages': return <PackageInventory />;
-        case 'Inventory/Hotels': return <HotelInventory />;
-        case 'Inventory/Tickets': return <TicketInventory />;
-        case 'Inventory/Flights': return <FlightInventory />;
-
-        // Operations
-        case 'Bookings': return <BookingsPage />;
-        case 'Agencies': return <AgencyManagement />;
-        case 'Employees': return <BranchEmployeeManagement />;
-        case 'Booking History': return <BookingHistory />;
-
-        // Default / Placeholder
-        default: return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
-            <Building2 size={64} className="mb-4 opacity-20" />
-            <h2 className="text-xl font-black uppercase tracking-widest">Section Under Construction</h2>
-            <p className="text-xs font-bold mt-2 uppercase tracking-tighter">Module: {currentPage}</p>
-          </div>
-        );
-      }
-    };
-
-    return (
-      <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
-
-        {/* Sidebar Component */}
-        <Sidebar
-          activeTab={currentPage}
-          setActiveTab={setCurrentPage}
-          isSidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          setIsLoggedIn={setIsLoggedIn}
-          userType={userType}
-        />
-
-        {/* Main Panel */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-
-          {/* Header */}
-          <header className="h-24 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 z-40 shrink-0">
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-3 bg-slate-50 rounded-2xl text-slate-500 hover:text-blue-600 transition-colors lg:hidden">
-                <Menu size={20} />
-              </button>
-              <div className="hidden sm:block">
-                <h2 className="text-xs font-black uppercase tracking-[3px] text-slate-400 mb-1">Current Section</h2>
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                    {currentPage.includes('/') ? currentPage.split('/')[1] : currentPage}
-                  </span>
-                  <ChevronRight size={16} className="text-slate-300" />
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg">LIVE PORTAL</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 lg:space-x-8">
-              <div className="relative hidden md:flex items-center">
-                <Search className="absolute left-4 text-slate-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Global Search..."
-                  className="pl-12 pr-4 py-3 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-100 text-xs font-bold transition-all w-48 focus:w-80"
-                />
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <button className="relative p-3 bg-slate-50 rounded-2xl text-slate-500 hover:text-blue-600 transition-all hover:scale-110">
-                  <Bell size={20} />
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">3</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="p-3 bg-red-50 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all hover:scale-110"
-                  title="Logout"
-                >
-                  <LogOut size={20} />
-                </button>
-              </div>
-            </div>
-          </header>
-
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-[#F8FAFC] scrollbar-hide">
-            <div className="max-w-[1600px] mx-auto min-h-full">
-              {renderPage()}
-            </div>
-          </div>
-        </main>
-      </div>
-    );
+  const handleLogin = (mode = 'branch') => {
+    setBranchData(branchAuthAPI.getUserData());
+    setUserType(mode);
+    setIsLoggedIn(true);
   };
 
-  export default App;
+  const handleLogout = () => {
+    branchAuthAPI.logout();
+    setBranchData(null);
+    setIsLoggedIn(false);
+    setCurrentPage('Dashboard');
+  };
+
+  if (!isLoggedIn) {
+    return <BranchLoginPage onLogin={handleLogin} />;
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'Dashboard': return <DashboardPage />;
+
+      // Inventory
+      case 'Inventory/Packages': return <PackageInventory />;
+      case 'Inventory/Hotels': return <HotelInventory />;
+      case 'Inventory/Tickets': return <TicketInventory />;
+      case 'Inventory/Flights': return <FlightInventory />;
+
+      // Operations
+      case 'Bookings': return <BookingsPage />;
+      case 'Agencies': return <AgencyManagement />;
+      case 'Employees': return <BranchEmployeeManagement />;
+      case 'Booking History': return <BookingHistory />;
+
+      // Default / Placeholder
+      default: return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
+          <Building2 size={64} className="mb-4 opacity-20" />
+          <h2 className="text-xl font-black uppercase tracking-widest">Section Under Construction</h2>
+          <p className="text-xs font-bold mt-2 uppercase tracking-tighter">Module: {currentPage}</p>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
+
+      {/* Sidebar Component */}
+      <Sidebar
+        activeTab={currentPage}
+        setActiveTab={setCurrentPage}
+        isSidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        setIsLoggedIn={setIsLoggedIn}
+        userType={userType}
+      />
+
+      {/* Main Panel */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+
+        {/* Header */}
+        <header className="h-24 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 z-40 shrink-0">
+          <div className="flex items-center space-x-6">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-3 bg-slate-50 rounded-2xl text-slate-500 hover:text-blue-600 transition-colors lg:hidden">
+              <Menu size={20} />
+            </button>
+            <div className="hidden sm:block">
+              <h2 className="text-xs font-black uppercase tracking-[3px] text-slate-400 mb-1">Current Section</h2>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  {currentPage.includes('/') ? currentPage.split('/')[1] : currentPage}
+                </span>
+                <ChevronRight size={16} className="text-slate-300" />
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg">LIVE PORTAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 lg:space-x-8">
+            <div className="relative hidden md:flex items-center">
+              <Search className="absolute left-4 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder="Global Search..."
+                className="pl-12 pr-4 py-3 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-100 text-xs font-bold transition-all w-48 focus:w-80"
+              />
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button className="relative p-3 bg-slate-50 rounded-2xl text-slate-500 hover:text-blue-600 transition-all hover:scale-110">
+                <Bell size={20} />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">3</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-3 bg-red-50 rounded-2xl text-red-500 hover:bg-red-500 hover:text-white transition-all hover:scale-110"
+                title="Logout"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-[#F8FAFC] scrollbar-hide">
+          <div className="max-w-[1600px] mx-auto min-h-full">
+            {renderPage()}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default App;
