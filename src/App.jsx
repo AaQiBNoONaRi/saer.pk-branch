@@ -29,6 +29,7 @@ import BookingInvoice from './pages/BookingInvoice';
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [branchData, setBranchData] = useState(null);
+  const [userType, setUserType] = useState('branch'); // 'branch' | 'employee'
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -48,13 +49,18 @@ const App = () => {
   // Check auth on mount
   useEffect(() => {
     if (branchAuthAPI.isAuthenticated()) {
-      setBranchData(branchAuthAPI.getUserData());
+      const userData = branchAuthAPI.getUserData();
+      setBranchData(userData);
+      // Determine stored type — employee_data in localStorage means employee
+      const type = localStorage.getItem('employee_data') ? 'employee' : 'branch';
+      setUserType(type);
       setIsLoggedIn(true);
     }
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = (mode = 'branch') => {
     setBranchData(branchAuthAPI.getUserData());
+    setUserType(mode);
     setIsLoggedIn(true);
   };
 
@@ -211,6 +217,7 @@ const App = () => {
         isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
         setIsLoggedIn={setIsLoggedIn}
+        userType={userType}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
