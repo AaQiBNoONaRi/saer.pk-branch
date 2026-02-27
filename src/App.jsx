@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Building2, Menu, X, Bell, Search, LogOut, ChevronRight,
+  Building2, Menu, Bell, Search, LogOut, ChevronRight,
   Ticket, CreditCard, Users, DollarSign, ArrowUpRight, ArrowDownRight,
   Plane, Eye
 } from 'lucide-react';
@@ -96,7 +96,7 @@ const OrderStatusTracker = ({ label, total, done, booked, cancelled }) => {
             <p className="text-sm font-black text-blue-600">{booked}</p>
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cancl</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cancel</p>
             <p className="text-sm font-black text-red-600">{cancelled}</p>
           </div>
         </div>
@@ -326,7 +326,7 @@ const App = () => {
               <input
                 type="text"
                 placeholder="Global Search..."
-                className="w-64 pl-12 pr-4 py-3 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-100 text-xs font-bold transition-all w-48 focus:w-80"
+                className="pl-12 pr-4 py-3 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-100 text-xs font-bold transition-all w-48 focus:w-80"
               />
             </div>
 

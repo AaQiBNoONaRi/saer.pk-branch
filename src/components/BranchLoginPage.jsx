@@ -30,22 +30,21 @@ export default function BranchLoginPage({ onLogin }) {
         } catch (error) {
             // Error handling
             setStatus('error');
-            if (error.response?.status === 401) {
-                setErrorMessage('Invalid username or password');
+            const data = error.response?.data;
+            const detail = data?.detail;
+
+            let msg = 'Unable to connect to server. Please try again.';
+            if (typeof detail === 'string') {
+                msg = detail;
+            } else if (Array.isArray(detail)) {
+                // Pydantic validation errors: [{msg: "...", ...}, ...]
+                msg = detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+            } else if (error.response?.status === 401) {
+                msg = 'Invalid username or password';
             } else if (error.response?.status === 403) {
-                const detail = error.response.data.detail;
-                if (detail.includes('Portal access is disabled')) {
-                    setErrorMessage('Portal access is disabled for your branch');
-                } else if (detail.includes('deactivated')) {
-                    setErrorMessage('Your branch account is deactivated');
-                } else {
-                    setErrorMessage(detail);
-                }
-            } else if (error.response?.data?.detail) {
-                setErrorMessage(error.response.data.detail);
-            } else {
-                setErrorMessage('Unable to connect to server. Please try again.');
+                msg = 'Access denied. Portal access may be disabled or account deactivated.';
             }
+            setErrorMessage(msg);
         } finally {
             setIsLoading(false);
         }

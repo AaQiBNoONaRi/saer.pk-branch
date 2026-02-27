@@ -1,32 +1,113 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import {
-    Calendar, Search, Filter, Download, Eye,
-    CheckCircle, XCircle, Clock, AlertCircle, MoreHorizontal, FileText
+    Calendar, Search, Filter, Download, Eye, CreditCard,
+    CheckCircle, XCircle, Clock, AlertCircle, MoreHorizontal, FileText, Loader2, Users
 } from 'lucide-react';
 import BookingVoucher from './BookingVoucher';
 import BookingInvoice from './BookingInvoice';
 import GroupTicketInvoice from './GroupTicketInvoice';
 
+const API = 'http://localhost:8000';
+
+// --- Countdown Timer Component ---
+const CountdownTimer = ({ deadline, paymentStatus }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    const paymentSubmitted = paymentStatus === 'pending' || paymentStatus === 'paid';
+
+    useEffect(() => {
+        // If payment already submitted, no need to run the timer
+        if (paymentSubmitted) return;
+        if (!deadline || deadline === '-') {
+            setTimeLeft('-');
+            return;
+        }
+
+        const target = new Date(deadline).getTime();
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const diff = target - now;
+            if (diff <= 0) { setTimeLeft('EXPIRED'); return; }
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft(`${h}h ${m}m ${s}s`);
+        };
+
+        const timer = setInterval(updateTimer, 1000);
+        updateTimer();
+        return () => clearInterval(timer);
+    }, [deadline, paymentStatus]);
+
+    // Agent has submitted payment — show static badge, timer irrelevant
+    if (paymentSubmitted) {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-black text-[11px]">
+                <CheckCircle size={12} />
+                Payment Submitted
+            </span>
+        );
+    }
+
+    if (timeLeft === 'EXPIRED') return <span className="text-rose-500 font-black">EXPIRED</span>;
+    if (timeLeft === '-') return <span className="text-slate-300">-</span>;
+
+    return (
+        <span className="text-blue-600 font-black tabular-nums flex items-center gap-1.5">
+            <Clock size={12} className="animate-pulse" />
+            {timeLeft}
+        </span>
+    );
+};
+
+
+
 // --- Status Badge ---
 const StatusBadge = ({ status }) => {
-    const styles = {
-        'Confirmed': 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        'Pending': 'bg-amber-50 text-amber-600 border-amber-100',
-        'Cancelled': 'bg-rose-50 text-rose-600 border-rose-100',
-        'Expired': 'bg-slate-50 text-slate-500 border-slate-100',
-    };
-    const icons = {
-        'Confirmed': CheckCircle,
-        'Pending': Clock,
-        'Cancelled': XCircle,
-        'Expired': AlertCircle,
-    };
-    const Icon = icons[status] || AlertCircle;
-    const style = styles[status] || styles['Expired'];
+    const s = String(status || 'Pending').toLowerCase();
+
+    let displayStatus = 'Pending';
+    let styleClass = 'bg-amber-50 text-amber-600 border-amber-100';
+    let Icon = Clock;
+
+    if (s === 'confirmed' || s === 'paid') {
+        displayStatus = 'Confirmed';
+        styleClass = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+        Icon = CheckCircle;
+    } else if (s === 'approved') {
+        displayStatus = 'Approved';
+        styleClass = 'bg-blue-50 text-blue-600 border-blue-100';
+        Icon = CheckCircle;
+    } else if (s.includes('cancel') || s.includes('reject')) {
+        displayStatus = 'Cancelled';
+        styleClass = 'bg-rose-50 text-rose-600 border-rose-100';
+        Icon = XCircle;
+    } else if (s.includes('expire')) {
+        displayStatus = 'Expired';
+        styleClass = 'bg-slate-50 text-slate-500 border-slate-100';
+        Icon = AlertCircle;
+    }
+
     return (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${style}`}>
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide border ${styleClass}`}>
             <Icon size={12} strokeWidth={2.5} />
-            {status}
+            {displayStatus}
+        </span>
+    );
+};
+
+// --- Payment Status Badge ---
+const PaymentStatusBadge = ({ status }) => {
+    const s = String(status || 'Unpaid').toLowerCase();
+    const isPaid = s === 'paid' || s === 'completed';
+    const isPending = s === 'pending';
+
+    return (
+        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : isPending ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+            }`}>
+            {isPaid ? 'Paid' : isPending ? 'Pending' : 'Unpaid'}
         </span>
     );
 };
@@ -46,47 +127,183 @@ const TabButton = ({ label, active, onClick }) => (
     </button>
 );
 
-// --- Mock Data ---
-const MOCK_BOOKINGS = [
-    { id: 'ORD-9912', date: 'Oct 24, 2024', pax: 'Muhammad Ali', expiry: '04:15:00', status: 'Pending', amount: '150,000' },
-    { id: 'ORD-9911', date: 'Oct 23, 2024', pax: 'Sarah Ahmed', expiry: '-', status: 'Confirmed', amount: '85,500' },
-    { id: 'ORD-9910', date: 'Oct 22, 2024', pax: 'Usman Khan', expiry: '00:00:00', status: 'Expired', amount: '45,000' },
-    { id: 'ORD-9909', date: 'Oct 21, 2024', pax: 'Fatima Bibi', expiry: '-', status: 'Cancelled', amount: '120,000' },
-    { id: 'ORD-9908', date: 'Oct 20, 2024', pax: 'Kamran Akmal', expiry: '23:45:00', status: 'Pending', amount: '65,000' },
-];
-
-const TABLE_HEADERS = ['Booking Date', 'Order No.', 'Pax Name', 'Expiry Timer', 'Booking Status', 'Amount', 'Action'];
+const TABLE_HEADERS = ['Date', 'Order #', 'Pax Name', 'Booked By', 'Payment', 'Status', 'Amount', 'Action'];
 
 export default function BookingHistory() {
-    const [activeTab, setActiveTab] = useState('Custom Package Bookings');
+    const [activeTab, setActiveTab] = useState('Groups Tickets');
     const [orderNo, setOrderNo] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
+
+    // Data State
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    // Action State
     const [openActionId, setOpenActionId] = useState(null);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [selectedGroupTicket, setSelectedGroupTicket] = useState(null);
 
-    const tabs = ['Groups Tickets', 'UMRAH BOOKINGS', 'Custom Package Bookings'];
+    /* —— URL Synchronization —— */
+    useEffect(() => {
+        const handlePopState = () => {
+            const path = window.location.pathname;
+            if (path === '/booking-history') {
+                setSelectedBooking(null);
+                setSelectedInvoice(null);
+                setSelectedGroupTicket(null);
+            } else {
+                const parts = path.split('/');
+                const id = parts[parts.length - 1];
+                const type = parts[parts.length - 2];
+
+                if (type === 'voucher') {
+                    const b = bookings.find(x => x._id === id);
+                    if (b) setSelectedBooking(b);
+                } else if (type === 'invoice') {
+                    const b = bookings.find(x => x._id === id);
+                    if (b) setSelectedInvoice(b);
+                } else if (type === 'group-invoice') {
+                    const b = bookings.find(x => (x._id || x.id) === id);
+                    if (b) setSelectedGroupTicket(b);
+                }
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        handlePopState(); // Run on mount
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [bookings]);
+
+    const updateView = (type, data) => {
+        if (!data) {
+            window.history.pushState(null, '', '/booking-history');
+            setSelectedBooking(null);
+            setSelectedInvoice(null);
+            setSelectedGroupTicket(null);
+            return;
+        }
+
+        const id = data._id || data.id;
+        window.history.pushState(null, '', `/booking-history/${type}/${id}`);
+        if (type === 'voucher') setSelectedBooking(data);
+        else if (type === 'invoice') setSelectedInvoice(data);
+        else if (type === 'group-invoice') setSelectedGroupTicket(data);
+    };
+
+    const tabs = ['Groups Tickets', 'UMRAH BOOKINGS', 'Custom Umrah Bookings'];
     const isGroupTab = activeTab === 'Groups Tickets';
+
+    const token = () => localStorage.getItem('branch_access_token');
+
+    // Fetch Bookings Based on Active Tab
+    useEffect(() => {
+        const fetchBookings = async () => {
+            setLoading(true);
+            setBookings([]);
+
+            let endpoint = '';
+            if (activeTab === 'Groups Tickets') endpoint = '/api/ticket-bookings/';
+            if (activeTab === 'UMRAH BOOKINGS') endpoint = '/api/umrah-bookings/';
+            if (activeTab === 'Custom Umrah Bookings') endpoint = '/api/custom-bookings/';
+
+            try {
+                const res = await fetch(`${API}${endpoint}`, {
+                    headers: { 'Authorization': `Bearer ${token()}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setBookings(Array.isArray(data) ? data : []);
+                } else {
+                    console.error('Failed to fetch bookings:', await res.text());
+                }
+            } catch (err) {
+                console.error('Network Error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBookings();
+    }, [activeTab]);
+
+    const handleMakePayment = (booking) => {
+        const id = booking._id || booking.id;
+        let type = '';
+        if (activeTab === 'Groups Tickets') type = 'ticket';
+        if (activeTab === 'UMRAH BOOKINGS') type = 'umrah';
+        if (activeTab === 'Custom Umrah Bookings') type = 'custom';
+
+        // This will be picked up by App.jsx to set the correct tab and pass resume ID
+        window.location.href = `/?tab=${type}&resume=${id}`;
+    };
+
+    // Data Mapping Helper
+    const mapBookingData = (b) => {
+        // Safe defaults
+        let date = 'Unknown';
+        let pax = 'Unknown Passenger';
+        let amount = b.grand_total || b.total_amount || 0;
+        let expiry = b.payment_deadline || '-';
+        let status = b.booking_status || b.status || 'Pending';
+
+        // Date formatting
+        if (b.created_at) {
+            date = new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Pax Name extraction
+        if (b.passengers && b.passengers.length > 0) {
+            const firstPax = b.passengers[0];
+            pax = `${firstPax.first_name || firstPax.given_name || ''} ${firstPax.last_name || firstPax.surname || ''}`.trim() || 'Unknown Passenger';
+        } else if (b.contact_details) {
+            pax = b.contact_details.name || b.contact_details.email || pax;
+        }
+
+        return {
+            id: b._id || b.id,
+            booking_reference: b.booking_reference || (b._id ? b._id.substring(0, 8).toUpperCase() : 'N/A'),
+            date,
+            pax,
+            booked_by: b.booked_by_name || 'Branch',
+            expiry,
+            status,
+            payment_status: b.payment_status || 'unpaid',
+            amount,
+            raw: b
+        };
+    };
+
+    // Filter Logic
+    const filteredBookings = bookings.map(mapBookingData).filter(b => {
+        const matchSearch = orderNo === '' || b.booking_reference.toLowerCase().includes(orderNo.toLowerCase()) || b.id.toLowerCase().includes(orderNo.toLowerCase());
+
+        // Basic Date Range Filter (ignores time)
+        let matchFrom = true;
+        let matchTo = true;
+        if (fromDate && b.raw.created_at) matchFrom = new Date(b.raw.created_at) >= new Date(fromDate);
+        if (toDate && b.raw.created_at) matchTo = new Date(b.raw.created_at) <= new Date(toDate);
+
+        return matchSearch && matchFrom && matchTo;
+    });
 
     // Groups Tickets tab: both See Booking and Invoice show GroupTicketInvoice
     if (selectedGroupTicket) {
-        return <GroupTicketInvoice booking={selectedGroupTicket} onBack={() => setSelectedGroupTicket(null)} />;
+        return <GroupTicketInvoice booking={selectedGroupTicket} onBack={() => updateView(null, null)} />;
     }
 
     // Other tabs: See Booking → Voucher, Invoice → Invoice
     if (selectedBooking) {
-        return <BookingVoucher booking={selectedBooking} onBack={() => setSelectedBooking(null)} />;
+        return <BookingVoucher booking={selectedBooking} onBack={() => updateView(null, null)} />;
     }
 
     if (selectedInvoice) {
-        return <BookingInvoice booking={selectedInvoice} onBack={() => setSelectedInvoice(null)} />;
+        return <BookingInvoice booking={selectedInvoice} onBack={() => updateView(null, null)} />;
     }
 
     return (
         <div
-            className="p-2 md: space-y-2 min-h-full "
+            className="p-4 md:p-8 space-y-6 min-h-full"
             onClick={() => setOpenActionId(null)}
         >
             {/* Search Filters Card */}
@@ -128,11 +345,15 @@ export default function BookingHistory() {
                     </div>
 
                     {/* Search Button */}
-                    <div className="md:col-span-3">
-                        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
-                            <Search size={18} strokeWidth={2.5} />
-                            Search
+                    <div className="md:col-span-3 flex gap-2">
+                        <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
+                            <Search size={18} strokeWidth={2.5} /> Search
                         </button>
+                        {(orderNo || fromDate || toDate) && (
+                            <button onClick={() => { setOrderNo(''); setFromDate(''); setToDate(''); }} className="px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition-all">
+                                Clear
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -158,101 +379,145 @@ export default function BookingHistory() {
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h3 className="text-lg font-extrabold text-slate-800">Booking</h3>
-                        <p className="text-xs font-semibold text-slate-400">{MOCK_BOOKINGS.length} bookings found</p>
+                        <p className="text-xs font-semibold text-slate-400">{filteredBookings.length} bookings found</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all">
-                            <Filter size={14} />
-                            Filters
+                            <Filter size={14} /> Filters
                         </button>
                         <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all">
-                            <Download size={14} />
-                            Export
+                            <Download size={14} /> Export
                         </button>
                     </div>
                 </div>
 
                 {/* Table Header Row */}
-                <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-slate-50 rounded-2xl mb-2 border border-slate-100">
+                <div className="grid grid-cols-8 gap-4 px-6 py-4 bg-slate-50 rounded-2xl mb-2 border border-slate-100">
                     {TABLE_HEADERS.map((header, idx) => (
-                        <div key={idx} className={`text-xs font-bold text-slate-400 uppercase tracking-wide ${idx === 6 ? 'text-right' : ''}`}>
+                        <div key={idx} className={`text-xs font-black text-slate-500 uppercase tracking-widest ${idx === 7 ? 'text-right pr-4' : idx === 0 ? 'text-left pl-4' : ''}`}>
                             {header}
                         </div>
                     ))}
                 </div>
 
                 {/* Data Rows */}
-                <div className="space-y-2">
-                    {MOCK_BOOKINGS.map((booking) => (
-                        <div key={booking.id} className="relative">
-                            <div className="grid grid-cols-7 gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl items-center hover:shadow-md hover:border-blue-100 transition-all group">
+                <div className="space-y-2 min-h-[200px]">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-blue-600">
+                            <Loader2 size={32} className="animate-spin" />
+                            <p className="text-sm font-bold text-slate-500">Fetching {activeTab}...</p>
+                        </div>
+                    ) : filteredBookings.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
+                                <Search size={24} className="text-slate-300" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-500">No bookings found</p>
+                            <p className="text-xs font-medium">Try adjusting your search criteria</p>
+                        </div>
+                    ) : (
+                        filteredBookings.map((b) => (
+                            <div key={b.id} className="relative">
+                                <div className="grid grid-cols-8 gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl items-center hover:shadow-md hover:border-blue-100 transition-all group">
 
-                                {/* Date */}
-                                <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                                    <Calendar size={14} className="text-slate-400" />
-                                    {booking.date}
-                                </div>
+                                    {/* Date */}
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700 whitespace-nowrap pl-4 text-left">
+                                        <Calendar size={13} className="text-slate-400" />
+                                        {b.date}
+                                    </div>
 
-                                {/* Order No */}
-                                <div className="text-sm font-bold text-blue-600">{booking.id}</div>
+                                    {/* Order No/Ref */}
+                                    <div className="text-xs font-black text-blue-600 font-mono tracking-tighter" title={`ID: ${b.id}`}>
+                                        {b.booking_reference}
+                                    </div>
 
-                                {/* Pax Name */}
-                                <div className="text-sm font-semibold text-slate-700">{booking.pax}</div>
+                                    {/* Pax Name */}
+                                    <div className="text-xs font-bold text-slate-700 truncate pr-2 text-left" title={b.pax}>{b.pax}</div>
 
-                                {/* Expiry */}
-                                <div className="text-sm font-mono font-medium text-slate-500">{booking.expiry}</div>
+                                    {/* Booked By */}
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-tight truncate px-1" title={b.booked_by}>
+                                        {b.booked_by}
+                                    </div>
 
-                                {/* Status */}
-                                <div><StatusBadge status={booking.status} /></div>
+                                    {/* Payment Status */}
+                                    <div className="flex justify-center">
+                                        <PaymentStatusBadge status={b.payment_status} />
+                                    </div>
 
-                                {/* Amount */}
-                                <div className="text-sm font-extrabold text-slate-800">Rs. {booking.amount}</div>
+                                    {/* Status */}
+                                    <div className="flex justify-center"><StatusBadge status={b.status} /></div>
 
-                                {/* Actions */}
-                                <div className="flex justify-end relative">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setOpenActionId(openActionId === booking.id ? null : booking.id);
-                                        }}
-                                        className={`p-2 rounded-lg transition-colors ${openActionId === booking.id ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        <MoreHorizontal size={20} />
-                                    </button>
+                                    {/* Amount */}
+                                    <div className="text-xs font-black text-slate-900 whitespace-nowrap">PKR {Number(b.amount || 0).toLocaleString()}</div>
 
-                                    {/* Dropdown Menu */}
-                                    {openActionId === booking.id && (
-                                        <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); isGroupTab ? setSelectedGroupTicket(booking) : setSelectedBooking(booking); setOpenActionId(null); }}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors"
-                                            >
-                                                <Eye size={16} />
-                                                See Booking
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); isGroupTab ? setSelectedGroupTicket(booking) : setSelectedInvoice(booking); setOpenActionId(null); }}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors border-t border-slate-50"
-                                            >
-                                                <FileText size={16} />
-                                                Invoice
-                                            </button>
-                                            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors border-t border-slate-50">
-                                                <Download size={16} />
-                                                Download Voucher
-                                            </button>
-                                            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-rose-500 hover:bg-rose-50 transition-colors border-t border-slate-100">
-                                                <XCircle size={16} />
-                                                Cancel Booking
-                                            </button>
-                                        </div>
-                                    )}
+                                    {/* Actions */}
+                                    <div className="flex justify-end relative">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenActionId(openActionId === b.id ? null : b.id);
+                                            }}
+                                            className={`p-2 rounded-lg transition-colors ${openActionId === b.id ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                                        >
+                                            <MoreHorizontal size={20} />
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {openActionId === b.id && (
+                                            <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                {(() => {
+                                                    const raw = b.raw || {};
+                                                    const st = String(b.status || '').toLowerCase();
+                                                    const pSt = String(raw.payment_status || '').toLowerCase();
+                                                    const pStatus = String(raw.paymentStatus || '').toLowerCase();
+                                                    const bSt = String(raw.booking_status || '').toLowerCase();
+
+                                                    const isUnderProcess = ['underprocess', 'pending', 'under_process'].includes(st);
+                                                    const isPaid = ['paid', 'completed'].includes(pSt) || ['paid', 'completed'].includes(pStatus) || ['paid', 'completed'].includes(st) || ['paid', 'completed'].includes(bSt);
+                                                    const isSubmitted = ['payment submitted', 'submitted', 'pending'].includes(pSt) || ['payment submitted', 'submitted', 'pending'].includes(pStatus) || ['payment submitted', 'submitted', 'pending'].includes(st);
+
+                                                    return isUnderProcess && !isPaid && !isSubmitted;
+                                                })() && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleMakePayment(b.raw); setOpenActionId(null); }}
+                                                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-black text-white bg-slate-900 hover:bg-blue-600 transition-colors"
+                                                        >
+                                                            <CreditCard size={16} />
+                                                            Make Payment
+                                                        </button>
+                                                    )}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); isGroupTab ? updateView('group-invoice', b.raw) : updateView('voucher', b.raw); setOpenActionId(null); }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                                                >
+                                                    <Eye size={16} />
+                                                    See Booking
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); isGroupTab ? updateView('group-invoice', b.raw) : updateView('invoice', b.raw); setOpenActionId(null); }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors border-t border-slate-50"
+                                                >
+                                                    <FileText size={16} />
+                                                    Invoice
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors border-t border-slate-50">
+                                                    <Download size={16} />
+                                                    Download Voucher
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-bold text-rose-500 hover:bg-rose-50 transition-colors border-t border-slate-100">
+                                                    <XCircle size={16} />
+                                                    Cancel Booking
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
     );
 }
+
