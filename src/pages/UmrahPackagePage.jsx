@@ -272,19 +272,19 @@ const UmrahPackageCard = ({ packageData, onBook, flights = [], airlines = [] }) 
 
                         <div className="space-y-4">
                             {prices.sharing && (
-                                <PriceRow label="Sharing" price={prices.sharing.selling} />
+                                <PriceRow label="Sharing" price={prices.sharing} />
                             )}
                             {prices.quint && (
-                                <PriceRow label="Quint" price={prices.quint.selling} />
+                                <PriceRow label="Quint" price={prices.quint} />
                             )}
                             {prices.quad && (
-                                <PriceRow label="Quad" price={prices.quad.selling} />
+                                <PriceRow label="Quad" price={prices.quad} />
                             )}
                             {prices.triple && (
-                                <PriceRow label="Triple" price={prices.triple.selling} />
+                                <PriceRow label="Triple" price={prices.triple} />
                             )}
                             {prices.double && (
-                                <PriceRow label="Double" price={prices.double.selling} />
+                                <PriceRow label="Double" price={prices.double} />
                             )}
                         </div>
                     </div>
@@ -313,15 +313,18 @@ const QuickInfo = ({ label, value, icon }) => (
     </div>
 );
 
-const PriceRow = ({ label, price }) => (
-    <div className="flex items-center justify-between border-b border-white/10 pb-3 last:border-0 last:pb-0">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-        <div className="text-right">
-            <span className="text-[10px] text-emerald-400 font-bold mr-1">PKR</span>
-            <span className="text-lg font-black tracking-tight">{price ? price.toLocaleString() : 'N/A'}</span>
+const PriceRow = ({ label, price }) => {
+    const displayPrice = typeof price === 'object' ? price?.selling : price;
+    return (
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 last:border-0 last:pb-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
+            <div className="text-right">
+                <span className="text-[10px] text-emerald-400 font-bold mr-1">PKR</span>
+                <span className="text-lg font-black tracking-tight">{displayPrice ? displayPrice.toLocaleString() : 'N/A'}</span>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default UmrahPackagePage;
 

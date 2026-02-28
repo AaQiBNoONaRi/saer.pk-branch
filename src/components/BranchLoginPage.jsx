@@ -3,8 +3,8 @@ import { Eye, EyeOff, Loader2, Building2, User, Lock, AlertCircle, CheckCircle2,
 import { branchAuthAPI } from '../services/api';
 
 export default function BranchLoginPage({ onLogin }) {
-    // 'branch' | 'employee'
-    const [loginMode, setLoginMode] = useState('branch');
+    // 'admin' | 'employee'
+    const [loginMode, setLoginMode] = useState('admin');
 
     const [identifier, setIdentifier] = useState('');  // email/username for branch; emp_id for employee
     const [password, setPassword] = useState('');
@@ -20,7 +20,7 @@ export default function BranchLoginPage({ onLogin }) {
         setErrorMessage('');
 
         try {
-            if (loginMode === 'branch') {
+            if (loginMode === 'admin') {
                 await branchAuthAPI.login(identifier, password);
             } else {
                 await branchAuthAPI.loginEmployee(identifier, password);
@@ -65,7 +65,7 @@ export default function BranchLoginPage({ onLogin }) {
 
                     <h2 className="relative z-10 text-white text-center">
                         <span className="block text-2xl font-black uppercase tracking-tight mb-2">
-                            {isEmployee ? 'Employee Portal' : 'Branch Portal'}
+                            {isEmployee ? 'Employee Portal' : 'Admin Portal'}
                         </span>
                         <span className="block text-sm font-bold uppercase tracking-widest opacity-80">Saer.Pk</span>
                     </h2>
@@ -75,13 +75,12 @@ export default function BranchLoginPage({ onLogin }) {
                 <div className="flex-1 p-6 lg:p-12 flex flex-col justify-center text-left bg-white">
                     <div className="max-w-sm w-full mx-auto lg:mx-0">
                         <h1 className="text-2xl lg:text-3xl font-black text-slate-900 mb-1 uppercase tracking-tight">
-                            {isEmployee ? 'Employee Login' : 'Branch Login'}
+                            {isEmployee ? 'Employee Login' : 'Admin Login'}
                         </h1>
                         <p className="text-slate-400 font-bold mb-6 uppercase text-[10px] tracking-[0.2em]">Secure Access Portal</p>
 
-                        {/* Mode Toggle */}
                         <div className="flex bg-slate-100 rounded-xl p-1 mb-6 gap-1">
-                            {[['branch', 'Branch'], ['employee', 'Employee']].map(([mode, label]) => (
+                            {[['admin', 'Admin'], ['employee', 'Employee']].map(([mode, label]) => (
                                 <button
                                     key={mode}
                                     type="button"
@@ -175,7 +174,7 @@ export default function BranchLoginPage({ onLogin }) {
                                         <span>Authenticating...</span>
                                     </>
                                 ) : (
-                                    <span>Access {isEmployee ? 'Employee' : 'Branch'} Portal</span>
+                                    <span>Access {isEmployee ? 'Employee' : 'Admin'} Portal</span>
                                 )}
                             </button>
                         </form>

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
     Users, Plus, Search, Mail, Phone, ArrowLeft,
     Edit2, Trash2, ShieldCheck, Loader2, AlertCircle,
-    Eye, EyeOff, UserCheck, Save, Building
+    Eye, EyeOff, UserCheck, Save, Building, Percent
 } from 'lucide-react';
-import { employeeAPI, branchAuthAPI } from '../services/api';
+import { employeeAPI, branchAuthAPI, commissionAPI } from '../services/api';
 
 const BranchEmployeeManagement = () => {
     const [employees, setEmployees] = useState([]);
+    const [commissionGroups, setCommissionGroups] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit'
     const [editingEmployee, setEditingEmployee] = useState(null);
@@ -25,27 +26,33 @@ const BranchEmployeeManagement = () => {
         password: '',
         is_active: true,
         portal_access_enabled: true,
-        username: ''
+        username: '',
+        group_id: ''
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
         try {
             if (branchId) {
-                const data = await employeeAPI.getAll(branchId);
-                setEmployees(data);
+                const [employeesData, commissionsData] = await Promise.all([
+                    employeeAPI.getAll(branchId),
+                    commissionAPI.getForEmployees()
+                ]);
+                setEmployees(employeesData);
+                // Only keep active commission groups
+                setCommissionGroups(commissionsData.filter(c => c.is_active));
             }
         } catch (err) {
-            console.error("Failed to fetch employees", err);
+            console.error("Failed to fetch data", err);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchEmployees();
+        fetchData();
     }, []);
 
     const handleInputChange = (e) => {
@@ -69,7 +76,8 @@ const BranchEmployeeManagement = () => {
             password: '',
             is_active: true,
             portal_access_enabled: true,
-            username: ''
+            username: '',
+            group_id: ''
         });
         setShowPassword(false);
         setError('');
@@ -86,7 +94,8 @@ const BranchEmployeeManagement = () => {
             password: '',
             is_active: employee.is_active ?? true,
             portal_access_enabled: employee.portal_access_enabled ?? true,
-            username: employee.username || employee.email || ''
+            username: employee.username || employee.email || '',
+            group_id: employee.group_id || ''
         });
         setShowPassword(false);
         setError('');
@@ -123,6 +132,7 @@ const BranchEmployeeManagement = () => {
                 entity_type: 'branch',
                 entity_id: branchId
             };
+            if (!payload.group_id) delete payload.group_id;
 
             if (editingEmployee && !payload.password) delete payload.password;
 
@@ -334,6 +344,16 @@ const BranchEmployeeManagement = () => {
                                 className="w-full px-4 py-3 bg-slate-50 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100">
                                 <option value={true}>Active</option>
                                 <option value={false}>Inactive</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Commission Group</label>
+                            <select name="group_id" value={formData.group_id} onChange={handleInputChange}
+                                className="w-full px-4 py-3 bg-slate-50 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">No Commission Group</option>
+                                {commissionGroups.map(group => (
+                                    <option key={group._id} value={group._id}>{group.name}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

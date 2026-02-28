@@ -236,7 +236,7 @@ const App = () => {
   const [serviceChargeRule, setServiceChargeRule] = useState(null);
 
   // Check authentication on mount
-  const [userType, setUserType] = useState('branch'); // 'branch' | 'employee'
+  const [userType, setUserType] = useState('admin'); // 'admin' | 'employee'
   const [editingAccount, setEditingAccount] = useState(null);
 
   // Umrah Package booking state
@@ -274,8 +274,18 @@ const App = () => {
   useEffect(() => {
     const fetchServiceCharge = async () => {
       if (isLoggedIn && branchData) {
+        // Only fetch if branch user OR area agency
+        const isAreaAgency = branchData.type === 'agency' && branchData.agency_type === 'area';
+        const isBranchOrEmployee = branchData.type === 'branch' || branchData.type === 'employee';
+
+        if (!isBranchOrEmployee && !isAreaAgency) {
+          setServiceChargeRule(null);
+          return;
+        }
         try {
-          const branchId = branchData.type === 'branch' ? (branchData.id || branchData._id) : branchData.entity_id;
+          const branchId = branchData.type === 'branch'
+            ? (branchData.id || branchData._id)
+            : (branchData.type === 'agency' ? branchData.branch_id : branchData.entity_id);
           if (branchId) {
             const fullBranch = await branchAPI.getOne(branchId);
             if (fullBranch.service_charge_group_id) {
@@ -292,7 +302,7 @@ const App = () => {
     fetchServiceCharge();
   }, [isLoggedIn, branchData]);
 
-  const handleLogin = (mode = 'branch') => {
+  const handleLogin = (mode = 'admin') => {
     const data = branchAuthAPI.getUserData();
     setBranchData(data);
     setUserType(mode);
@@ -345,7 +355,7 @@ const App = () => {
           }} />;
       case 'Umrah Package Booking':
         return <UmrahBookingPage
-          selectedPackage={selectedPackage}
+          packageData={selectedPackage}
           flights={bookingFlights}
           airlines={bookingAirlines}
           serviceChargeRule={serviceChargeRule}

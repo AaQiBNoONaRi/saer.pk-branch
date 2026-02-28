@@ -76,6 +76,8 @@ export const branchAuthAPI = {
     logout: () => {
         localStorage.removeItem('branch_access_token');
         localStorage.removeItem('branch_data');
+        localStorage.removeItem('employee_data');
+        localStorage.removeItem('agency_data');
     },
 
     /**
@@ -116,8 +118,30 @@ export const branchAuthAPI = {
         return response.data;
     },
 
+    loginAgency: async (email, password) => {
+        const response = await api.post('/api/agencies/login', {
+            username: email,
+            password,
+        });
+
+        if (response.data.access_token) {
+            localStorage.setItem('branch_access_token', response.data.access_token);
+            localStorage.setItem('agency_data', JSON.stringify(response.data.agency));
+            // Clear other data
+            localStorage.removeItem('branch_data');
+            localStorage.removeItem('employee_data');
+        }
+
+        return response.data;
+    },
+
     getEmployeeData: () => {
         const data = localStorage.getItem('employee_data');
+        return data ? JSON.parse(data) : null;
+    },
+
+    getAgencyData: () => {
+        const data = localStorage.getItem('agency_data');
         return data ? JSON.parse(data) : null;
     },
 
@@ -127,6 +151,9 @@ export const branchAuthAPI = {
 
         const employeeData = localStorage.getItem('employee_data');
         if (employeeData) return { ...JSON.parse(employeeData), type: 'employee' };
+
+        const agencyData = localStorage.getItem('agency_data');
+        if (agencyData) return { ...JSON.parse(agencyData), type: 'agency' };
 
         return null;
     },
@@ -222,6 +249,13 @@ export const branchAPI = {
 export const serviceChargeAPI = {
     getOne: async (id) => {
         const response = await api.get(`/api/service-charges/${id}`);
+        return response.data;
+    }
+};
+
+export const commissionAPI = {
+    getForEmployees: async () => {
+        const response = await api.get('/api/commissions/?applied_to=employee');
         return response.data;
     }
 };

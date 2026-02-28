@@ -154,11 +154,11 @@ const PackageCard = ({ packageData, onBook }) => {
                             </div>
 
                             <div className="space-y-4">
-                                {prices.sharing && <PriceRow label="Sharing" price={prices.sharing.selling} />}
-                                {prices.quint && <PriceRow label="Quint" price={prices.quint.selling} />}
-                                {prices.quad && <PriceRow label="Quad" price={prices.quad.selling} />}
-                                {prices.triple && <PriceRow label="Triple" price={prices.triple.selling} />}
-                                {prices.double && <PriceRow label="Double" price={prices.double.selling} />}
+                                {prices.sharing && <PriceRow label="Sharing" price={prices.sharing} />}
+                                {prices.quint && <PriceRow label="Quint" price={prices.quint} />}
+                                {prices.quad && <PriceRow label="Quad" price={prices.quad} />}
+                                {prices.triple && <PriceRow label="Triple" price={prices.triple} />}
+                                {prices.double && <PriceRow label="Double" price={prices.double} />}
                             </div>
                         </div>
                     </div>
@@ -196,14 +196,17 @@ const QuickInfo = ({ label, value, icon }) => (
     </div>
 );
 
-const PriceRow = ({ label, price }) => (
-    <div className="flex items-center justify-between border-b border-white/10 pb-4 last:border-0 last:pb-0 group">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{label}</span>
-        <div className="text-right">
-            <span className="text-[10px] text-emerald-400 font-bold mr-1.5 opacity-50">PKR</span>
-            <span className="text-xl font-black tracking-tight">{price ? price.toLocaleString() : 'N/A'}</span>
+const PriceRow = ({ label, price }) => {
+    const displayPrice = typeof price === 'object' ? price?.selling : price;
+    return (
+        <div className="flex items-center justify-between border-b border-white/10 pb-4 last:border-0 last:pb-0 group">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{label}</span>
+            <div className="text-right">
+                <span className="text-[10px] text-emerald-400 font-bold mr-1.5 opacity-50">PKR</span>
+                <span className="text-xl font-black tracking-tight">{displayPrice ? displayPrice.toLocaleString() : 'N/A'}</span>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default PackageInventory;

@@ -231,7 +231,13 @@ const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines 
   /* â”€â”€ available rooms from package_prices â”€â”€ */
   const availableRooms = useMemo(() => {
     const rooms = Object.entries(packageData.package_prices || {})
-      .filter(([, v]) => v && v.selling > 0).map(([k]) => k);
+      .filter(([, v]) => {
+        if (!v) return false;
+        if (typeof v === 'object' && v.selling > 0) return true;
+        if (typeof v === 'number' && v > 0) return true;
+        return false;
+      })
+      .map(([k]) => k);
     // private room only if double is available
     if (rooms.includes('double') && !rooms.includes('private')) rooms.push('private');
     return rooms;
@@ -247,7 +253,8 @@ const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines 
 
   // private room price = base + (double - base) * 2
   const privateRoomPrice = useMemo(() => {
-    const doublePrice = packageData.package_prices?.double?.selling || 0;
+    const doubleVal = packageData.package_prices?.double;
+    const doublePrice = (typeof doubleVal === 'object' ? doubleVal?.selling : doubleVal) || 0;
     const roomPortion = doublePrice - adultBasePrice;
     return adultBasePrice + (roomPortion * 2);
   }, [packageData, adultBasePrice]);
@@ -665,7 +672,9 @@ const StepOneRoomsAndPax = ({
           {availableRooms.map(rt => {
             const qty = roomSel[rt] || 0;
             const isPrivate = rt === 'private';
-            const price = isPrivate ? privateRoomPrice : (packageData.package_prices?.[rt]?.selling || 0);
+            const rtVal = packageData.package_prices?.[rt];
+            const rtPrice = (typeof rtVal === 'object' ? rtVal?.selling : rtVal) || 0;
+            const price = isPrivate ? privateRoomPrice : rtPrice;
             return (
               <div key={rt} className={`bg-white rounded-2xl border-2 shadow-sm transition-all ${qty > 0 ? 'border-blue-500 shadow-blue-50' : 'border-slate-200'}`}>
                 <div className="p-5">

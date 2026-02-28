@@ -137,7 +137,7 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             {isSidebarOpen && (
                                 <div className="min-w-0 transition-opacity duration-200">
                                     <p className="text-xs font-black text-slate-800 uppercase truncate">{branchName}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">Branch Portal</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">Admin Portal</p>
                                 </div>
                             )}
                         </div>

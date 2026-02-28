@@ -30,6 +30,38 @@ const AgentUmrahCalculator = ({ onBookCustomPackage, serviceChargeRule }) => {
     const [includeFood, setIncludeFood] = useState(false);
     const [includeZiarat, setIncludeZiarat] = useState(false);
 
+    // --- Service Charge Helpers ---
+    const applyTicketCharge = (price) => {
+        if (!serviceChargeRule) return price;
+        const charge = Number(serviceChargeRule.ticket_charge) || 0;
+        return serviceChargeRule.ticket_charge_type === 'percentage'
+            ? price + (price * (charge / 100))
+            : price + charge;
+    };
+
+    const applyPackageCharge = (price) => {
+        if (!serviceChargeRule) return price;
+        const charge = Number(serviceChargeRule.package_charge) || 0;
+        return serviceChargeRule.package_charge_type === 'percentage'
+            ? price + (price * (charge / 100))
+            : price + charge;
+    };
+
+    const applyHotelCharge = (price, hotelId, roomType) => {
+        if (!serviceChargeRule || !serviceChargeRule.hotel_charges) return price;
+
+        // Normalize roomType for lookup (e.g. 'Double' -> 'double_charge')
+        const key = `${roomType.toLowerCase()}_charge`;
+
+        for (const period of serviceChargeRule.hotel_charges) {
+            if (period.hotels?.includes(String(hotelId))) {
+                const override = Number(period[key]) || 0;
+                return price + override;
+            }
+        }
+        return price;
+    };
+
     // Flight Inventory State
     const [flights, setFlights] = useState([]);
     const [showFlightModal, setShowFlightModal] = useState(false);
@@ -892,39 +924,6 @@ const AgentUmrahCalculator = ({ onBookCustomPackage, serviceChargeRule }) => {
 
     // --- PRICING LOGIC ---
 
-    const applyTicketCharge = (basePrice) => {
-        if (!serviceChargeRule) return basePrice;
-        const charge = serviceChargeRule.ticket_charge || 0;
-        const type = serviceChargeRule.ticket_charge_type || 'fixed';
-        if (type === 'percentage') {
-            return basePrice + (basePrice * (charge / 100));
-        }
-        return basePrice + charge;
-    };
-
-    const applyPackageCharge = (basePrice) => {
-        if (!serviceChargeRule) return basePrice;
-        const charge = serviceChargeRule.package_charge || 0;
-        const type = serviceChargeRule.package_charge_type || 'fixed';
-        if (type === 'percentage') {
-            return basePrice + (basePrice * (charge / 100));
-        }
-        return basePrice + charge;
-    };
-
-    const applyHotelCharge = (basePrice, hotelId, roomType) => {
-        if (!serviceChargeRule || !hotelId) return basePrice;
-        const hotelCharges = serviceChargeRule.hotel_charges || [];
-        const keySuffix = roomType ? `${roomType.toLowerCase()}_charge` : '';
-
-        for (const period of hotelCharges) {
-            if (period.hotels?.includes(hotelId)) {
-                const override = period[keySuffix] || 0;
-                return basePrice + override;
-            }
-        }
-        return basePrice;
-    };
 
     const calculatePrices = () => {
         const totalPax = passengers.adults + passengers.children + passengers.infants;
@@ -976,9 +975,9 @@ const AgentUmrahCalculator = ({ onBookCustomPackage, serviceChargeRule }) => {
 
         // 2. Calculate Flight
         if (selectedFlight) {
-            const adultF = selectedFlight.adult_selling || 0;
-            const childF = selectedFlight.child_selling || 0;
-            const infantF = selectedFlight.infant_selling || 0;
+            const adultF = applyTicketCharge(selectedFlight.adult_selling || 0);
+            const childF = applyTicketCharge(selectedFlight.child_selling || 0);
+            const infantF = applyTicketCharge(selectedFlight.infant_selling || 0);
 
             const totalFlight = (adultF * passengers.adults) + (childF * passengers.children) + (infantF * passengers.infants);
             flightPrice = totalFlight;
