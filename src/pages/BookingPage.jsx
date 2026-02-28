@@ -21,8 +21,11 @@ import {
   ArrowLeft,
   FileText,
   Smartphone,
-  Clock
+  Clock,
+  Landmark
 } from 'lucide-react';
+
+import SearchableSelect from '../components/ui/SearchableSelect';
 
 const API = 'http://localhost:8000';
 
@@ -101,6 +104,11 @@ const BookingPage = ({ bookingData, onBack, resumeId }) => {
     note: '',
     beneficiaryAccount: '',
     agentAccount: '',
+    transferAccount: null,
+    transferAccountName: '',
+    transferPhone: '',
+    transferCNIC: '',
+    transferAccountNumber: '',
     slipFile: null,
     // For cash
     bankName: '',
@@ -864,6 +872,13 @@ const StepThree = ({
         }
       }
 
+      if (paymentMethod === 'transfer' && (!paymentData.transferAccount || !paymentData.transferAccountNumber || !paymentData.transferAccountName || !paymentData.transferPhone || !paymentData.transferCNIC)) {
+        if (!confirm('⚠️ Transfer details incomplete. Continue anyway?')) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Note: Slip file is optional - just warn if missing
       if (paymentMethod === 'bank' && !slipFile) {
         if (!confirm('⚠️ No payment slip uploaded. Continue anyway?')) {
@@ -886,6 +901,12 @@ const StepThree = ({
         formData.append('bank_name', paymentData.bankName || '');
         formData.append('depositor_name', paymentData.depositorName || '');
         formData.append('depositor_cnic', paymentData.depositorCNIC || '');
+      } else if (paymentMethod === 'transfer') {
+        formData.append('beneficiary_account', paymentData.transferAccount || '');
+        formData.append('transfer_account_number', paymentData.transferAccountNumber || '');
+        formData.append('transfer_account', paymentData.transferAccountName || ''); // Backend uses 'transfer_account' for the Name
+        formData.append('transfer_phone', paymentData.transferPhone || '');
+        formData.append('transfer_cnic', paymentData.transferCNIC || '');
       } else {
         formData.append('beneficiary_account', paymentData.beneficiaryAccount || '');
         formData.append('agent_account', paymentData.agentAccount || '');
@@ -1052,6 +1073,12 @@ const StepThree = ({
             onClick={() => setPaymentMethod('bank')}
           />
           <PaymentMethodCard
+            label="Transfer"
+            icon={<Landmark size={24} />}
+            active={paymentMethod === 'transfer'}
+            onClick={() => setPaymentMethod('transfer')}
+          />
+          <PaymentMethodCard
             label="Cash"
             icon={<Wallet size={24} />}
             active={paymentMethod === 'cash'}
@@ -1067,6 +1094,76 @@ const StepThree = ({
         </div>
 
         {/* Payment Form Fields */}
+        {paymentMethod === 'transfer' && (
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SearchableSelect
+                label="Organization Account *"
+                options={beneficiaryAccounts}
+                value={paymentData.transferAccount}
+                onChange={(v) => handlePaymentDataChange('transferAccount', v)}
+                placeholder="Search and select account..."
+              />
+              <InputField
+                label="Client Account Number (Sender) *"
+                placeholder="e.g. 10023456789"
+                value={paymentData.transferAccountNumber}
+                onChange={(v) => handlePaymentDataChange('transferAccountNumber', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField
+                label="Transfer Account Name *"
+                placeholder="e.g. John Doe"
+                value={paymentData.transferAccountName}
+                onChange={(v) => handlePaymentDataChange('transferAccountName', v)}
+              />
+              <InputField
+                label="Phone Number *"
+                placeholder="03001234567"
+                value={paymentData.transferPhone}
+                onChange={(v) => handlePaymentDataChange('transferPhone', v)}
+              />
+              <InputField
+                label="CNIC Number *"
+                placeholder="12345-1234567-1"
+                value={paymentData.transferCNIC}
+                onChange={(v) => handlePaymentDataChange('transferCNIC', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField
+                label="Amount *"
+                type="number"
+                placeholder="0.00"
+                value={paymentData.amount}
+                onChange={(v) => handlePaymentDataChange('amount', parseFloat(v) || 0)}
+              />
+              <InputField
+                label="Date *"
+                type="date"
+                value={paymentData.date}
+                onChange={(v) => handlePaymentDataChange('date', v)}
+              />
+              <InputField
+                label="Note (Optional)"
+                placeholder="Add note"
+                value={paymentData.note}
+                onChange={(v) => handlePaymentDataChange('note', v)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Slip *</label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileChange}
+                className="mt-2 w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 ring-blue-50 focus:bg-white focus:border-blue-200 transition-all cursor-pointer"
+              />
+              {slipFile && <p className="text-xs font-bold text-green-600 mt-2 ml-1">✓ File selected: {slipFile.name}</p>}
+            </div>
+          </div>
+        )}
         {paymentMethod === 'bank' && (
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

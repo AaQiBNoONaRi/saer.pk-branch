@@ -212,4 +212,18 @@ export const employeeAPI = {
     }
 };
 
+export const branchAPI = {
+    getOne: async (id) => {
+        const response = await api.get(`/api/branches/${id}`);
+        return response.data;
+    }
+};
+
+export const serviceChargeAPI = {
+    getOne: async (id) => {
+        const response = await api.get(`/api/service-charges/${id}`);
+        return response.data;
+    }
+};
+
 export default api;

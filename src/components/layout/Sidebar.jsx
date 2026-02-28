@@ -69,23 +69,26 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                     <NavGroup title="Main Menu" isOpen={isSidebarOpen}>
                         <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => handleNavClick('Dashboard')} isOpen={isSidebarOpen} />
 
-                        {/* Branch users see all nav items; employees only see Dashboard */}
+                        {/* Bookings dropdown - visible for both branch and employee */}
+                        <NavDropdown
+                            icon={<Ticket size={20} />}
+                            label="Bookings"
+                            isOpen={isSidebarOpen}
+                            isExpanded={isBookingsOpen}
+                            onClick={() => setBookingsOpen(!isBookingsOpen)}
+                            active={['Custom Umrah', 'Custom Umrah Booking', 'Umrah Package', 'Umrah Package Booking', 'Ticket'].includes(activeTab)}
+                        >
+                            <DropdownItem label="Custom Umrah" active={activeTab === 'Custom Umrah' || activeTab === 'Custom Umrah Booking'} onClick={() => handleNavClick('Custom Umrah')} />
+                            <DropdownItem label="Umrah Package" active={activeTab === 'Umrah Package' || activeTab === 'Umrah Package Booking'} onClick={() => handleNavClick('Umrah Package')} />
+                            <DropdownItem label="Ticket" active={activeTab === 'Ticket'} onClick={() => handleNavClick('Ticket')} />
+                        </NavDropdown>
+
+                        {/* Booking History - visible for both branch and employee */}
+                        <NavItem icon={<History size={20} />} label="Booking History" active={activeTab === 'Booking History'} onClick={() => handleNavClick('Booking History')} isOpen={isSidebarOpen} />
+
+                        {/* Branch specific items */}
                         {userType === 'branch' && (
                             <>
-                                {/* Bookings dropdown */}
-                                <NavDropdown
-                                    icon={<Ticket size={20} />}
-                                    label="Bookings"
-                                    isOpen={isSidebarOpen}
-                                    isExpanded={isBookingsOpen}
-                                    onClick={() => setBookingsOpen(!isBookingsOpen)}
-                                    active={['Custom Umrah', 'Custom Umrah Booking', 'Umrah Package', 'Umrah Package Booking', 'Ticket'].includes(activeTab)}
-                                >
-                                    <DropdownItem label="Custom Umrah" active={activeTab === 'Custom Umrah' || activeTab === 'Custom Umrah Booking'} onClick={() => handleNavClick('Custom Umrah')} />
-                                    <DropdownItem label="Umrah Package" active={activeTab === 'Umrah Package' || activeTab === 'Umrah Package Booking'} onClick={() => handleNavClick('Umrah Package')} />
-                                    <DropdownItem label="Ticket" active={activeTab === 'Ticket'} onClick={() => handleNavClick('Ticket')} />
-                                </NavDropdown>
-
                                 <NavDropdown
                                     icon={<UsersRound size={20} />}
                                     label="Entities"
@@ -101,7 +104,6 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
 
                                 <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
-                                <NavItem icon={<History size={20} />} label="Booking History" active={activeTab === 'Booking History'} onClick={() => handleNavClick('Booking History')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
                             </>
                         )

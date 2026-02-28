@@ -4,8 +4,10 @@ import {
   Plane, Building2, Users, ChevronDown, ChevronUp,
   CheckCircle, ArrowLeft, Clock, Upload, X, Check,
   CreditCard, ArrowRight, FileText, Smartphone, Wallet,
-  Truck, Utensils, MapPin, Globe, Star, Building, Info
+  Truck, Utensils, MapPin, Globe, Star, Building, Info, Landmark, ShieldCheck
 } from 'lucide-react';
+
+import SearchableSelect from '../components/ui/SearchableSelect';
 
 const API = 'http://localhost:8000';
 const PKR = (n) => `PKR ${(Number(n) || 0).toLocaleString()}`;
@@ -425,7 +427,7 @@ const StepTwoReview = ({
 }) => {
   const {
     selectedFlight, selectedVehicle, selectedVisaRate,
-    hotelRows = [], selectedOptions = [], riyalRate
+    hotelRows = [], selectedOptions = [], riyalRate, serviceChargeRule
   } = calculatorData;
 
   const hasService = (name) => selectedOptions.some(opt => opt.toLowerCase().includes(name));
@@ -458,9 +460,17 @@ const StepTwoReview = ({
       {/* ══ RIGHT — Price Card ══ */}
       <div className="lg:col-span-5">
         <div className="bg-white rounded-3xl border-2 border-blue-50 shadow-lg overflow-hidden sticky top-6">
-          <div className="p-6 border-b border-slate-100 bg-blue-50/30">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Price Breakdown</h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{passengers.length} Passengers · {familyInvoices.length} Famil{familyInvoices.length === 1 ? 'y' : 'ies'}</p>
+          <div className="p-6 border-b border-slate-100 bg-blue-50/30 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Price Breakdown</h3>
+              <p className="text-[10px] font-bold text-slate-400 mt-0.5">{passengers.length} Passengers · {familyInvoices.length} Famil{familyInvoices.length === 1 ? 'y' : 'ies'}</p>
+            </div>
+            {serviceChargeRule && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <ShieldCheck size={12} className="text-emerald-400" />
+                <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-wider">Inclusive Price</span>
+              </div>
+            )}
           </div>
           <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
             {familyInvoices.map((inv, fi) => (
@@ -598,6 +608,13 @@ const StepThreePayment = ({
         if (!window.confirm('⚠️ No payment slip uploaded. Continue anyway?')) { setIsLoading(false); return; }
       }
 
+      if (paymentMethod === 'transfer' && (!paymentData.transferAccount || !paymentData.transferAccountNumber || !paymentData.transferAccountName || !paymentData.transferPhone || !paymentData.transferCNIC)) {
+        if (!window.confirm('⚠️ Transfer details incomplete. Continue anyway?')) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
 
       // Bank / Cash - Use centralized payments API
       const formData = new FormData();
@@ -612,6 +629,12 @@ const StepThreePayment = ({
         formData.append('bank_name', paymentData.bankName || '');
         formData.append('depositor_name', paymentData.depositorName || '');
         formData.append('depositor_cnic', paymentData.depositorCNIC || '');
+      } else if (paymentMethod === 'transfer') {
+        formData.append('beneficiary_account', paymentData.transferAccount || '');
+        formData.append('transfer_account_number', paymentData.transferAccountNumber || '');
+        formData.append('transfer_account', paymentData.transferAccountName || ''); // Backend uses 'transfer_account' for the Name
+        formData.append('transfer_phone', paymentData.transferPhone || '');
+        formData.append('transfer_cnic', paymentData.transferCNIC || '');
       } else {
         formData.append('beneficiary_account', paymentData.beneficiaryAccount || '');
         formData.append('agent_account', paymentData.agentAccount || '');
@@ -738,9 +761,69 @@ const StepThreePayment = ({
         <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Select Payment Method</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <PaymentMethodCard label="Bank Transfer" icon={<Building size={24} />} active={paymentMethod === 'bank'} onClick={() => setPaymentMethod('bank')} />
+          <PaymentMethodCard label="Transfer" icon={<Landmark size={24} />} active={paymentMethod === 'transfer'} onClick={() => setPaymentMethod('transfer')} />
           <PaymentMethodCard label="Cash" icon={<Wallet size={24} />} active={paymentMethod === 'cash'} onClick={() => setPaymentMethod('cash')} />
           <PaymentMethodCard label="KuikPay" icon={<Smartphone size={24} />} active={false} disabled={true} onClick={() => { }} />
         </div>
+
+        {/* Transfer */}
+        {paymentMethod === 'transfer' && (
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SearchableSelect
+                label="Organization Account *"
+                options={beneficiaryAccounts}
+                value={paymentData.transferAccount}
+                onChange={v => upd('transferAccount', v)}
+                placeholder="Search and select account..."
+              />
+              <InputField
+                label="Client Account Number (Sender) *"
+                placeholder="e.g. 10023456789"
+                value={paymentData.transferAccountNumber}
+                onChange={v => upd('transferAccountNumber', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField
+                label="Transfer Account Name *"
+                placeholder="e.g. John Doe"
+                value={paymentData.transferAccountName}
+                onChange={v => upd('transferAccountName', v)}
+              />
+              <InputField
+                label="Phone Number *"
+                placeholder="03001234567"
+                value={paymentData.transferPhone}
+                onChange={v => upd('transferPhone', v)}
+              />
+              <InputField
+                label="CNIC Number *"
+                placeholder="12345-1234567-1"
+                value={paymentData.transferCNIC}
+                onChange={v => upd('transferCNIC', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField label="Amount *" type="number" placeholder="0.00" value={paymentData.amount} onChange={v => upd('amount', parseFloat(v) || 0)} />
+              <InputField label="Date *" type="date" value={paymentData.date} onChange={v => upd('date', v)} />
+              <InputField label="Note (Optional)" placeholder="Add note" value={paymentData.note} onChange={v => upd('note', v)} />
+            </div>
+            <div>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Upload Payment Slip *</label>
+              {paymentData.slipFile ? (
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mt-2">
+                  <Check size={16} className="text-green-600" />
+                  <span className="text-xs font-black text-green-700 flex-1 truncate">{paymentData.slipFile.name}</span>
+                  <button onClick={() => upd('slipFile', null)} className="text-slate-400 hover:text-red-500"><X size={15} /></button>
+                </div>
+              ) : (
+                <input type="file" accept="image/*,.pdf" onChange={e => { if (e.target.files[0]) upd('slipFile', e.target.files[0]); }}
+                  className="mt-2 w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 ring-blue-50 transition-all cursor-pointer" />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Bank */}
         {(paymentMethod === 'bank') && (
@@ -970,7 +1053,9 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
   const [paymentData, setPaymentData] = useState({
     amount: 0, date: new Date().toISOString().split('T')[0], note: '',
     bankName: '', depositorName: '', depositorCNIC: '', slipFile: null,
-    beneficiaryAccount: '', agentAccount: ''
+    beneficiaryAccount: '', agentAccount: '',
+    transferAccount: null, transferAccountName: '', transferPhone: '',
+    transferCNIC: '', transferAccountNumber: ''
   });
   const [discountGroup, setDiscountGroup] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -1027,6 +1112,57 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
     }
   }, [resumeId]);
 
+  // ── Service Charge Helpers ──
+  const applyHotelCharge = (basePrice, hotelId, roomType) => {
+    if (!serviceChargeRule) return basePrice;
+    const rule = serviceChargeRule;
+    let charge = rule.hotel_charge || 0;
+    const type = rule.hotel_charge_type || 'fixed';
+
+    if (rule.hotel_overrides && hotelId && roomType) {
+      const override = rule.hotel_overrides.find(o => String(o.hotel_id) === String(hotelId) && o.room_type === roomType);
+      if (override) charge = override.charge;
+    }
+
+    if (type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyVisaCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.visa_charge || 0;
+    if (serviceChargeRule.visa_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyTransportCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.transport_charge || 0;
+    if (serviceChargeRule.transport_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyFoodCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.food_charge || 0;
+    if (serviceChargeRule.food_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyZiaratCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.ziarat_charge || 0;
+    if (serviceChargeRule.ziarat_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyPackageCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.package_charge || 0;
+    if (serviceChargeRule.package_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
   // ── Pricing helpers ──
   const buildFamilyInvoice = (family, fi) => {
     const exchangeRate = riyalRate?.rate || 1;
@@ -1043,20 +1179,31 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       Object.entries(family.assignments).forEach(([hotelId, asgn]) => {
         const hotelRow = hotelRows.find(h => String(h.id) === String(hotelId));
         if (!hotelRow) return;
-        accomNative += (asgn.rate_sar || 0) * (asgn.qty || 1) * (hotelRow.total_nights || 0);
+        const baseRate = asgn.rate_sar || 0;
+        const inclusiveRate = applyHotelCharge(baseRate, hotelId, asgn.roomType || asgn.room_type);
+        accomNative += inclusiveRate * (asgn.qty || 1) * (hotelRow.total_nights || 0);
       });
     }
     const accomPKR = toPKR(accomNative, isHotelPKR);
 
     // Transport — adult_selling is the native rate (SAR or PKR depending on flag)
-    const transportNative = (selectedVehicle?.adult_selling || 0) * familyPax;
+    const transportBase = (selectedVehicle?.adult_selling || 0);
+    const transportInclusive = applyTransportCharge(transportBase);
+    const transportNative = transportInclusive * familyPax;
     const transportNet = toPKR(transportNative, isTransPKR);
 
     // Visa — native rate (SAR or PKR depending on flag)
-    const adultVisaNative = Number(selectedVisaRate?.adult_selling || selectedVisaRate?.adult_rate || 0);
-    const childVisaNative = Number(selectedVisaRate?.child_selling || selectedVisaRate?.child_rate || 0);
-    const infantVisaNative = Number(selectedVisaRate?.infant_selling || selectedVisaRate?.infant_rate || 0);
-    const totalVisaNative = (adultVisaNative * (family.adults || 0)) + (childVisaNative * (family.children || 0)) + (infantVisaNative * (family.infants || 0));
+    const adultVisaBase = Number(selectedVisaRate?.adult_selling || selectedVisaRate?.adult_rate || 0);
+    const childVisaBase = Number(selectedVisaRate?.child_selling || selectedVisaRate?.child_rate || 0);
+    const infantVisaBase = Number(selectedVisaRate?.infant_selling || selectedVisaRate?.infant_rate || 0);
+
+    const adultVisaInclusive = applyVisaCharge(adultVisaBase);
+    const childVisaInclusive = applyVisaCharge(childVisaBase);
+    const infantVisaInclusive = applyVisaCharge(infantVisaBase);
+
+    const totalVisaNative = (adultVisaInclusive * (family.adults || 0)) +
+      (childVisaInclusive * (family.children || 0)) +
+      (infantVisaInclusive * (family.infants || 0));
     const totalVisaPKR = toPKR(totalVisaNative, isVisaPKR);
 
     // Tickets — always PKR
@@ -1074,9 +1221,14 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       const start = foodRow.startDate ? new Date(foodRow.startDate) : null;
       const end = foodRow.endDate ? new Date(foodRow.endDate) : null;
       const days = start && end ? Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24))) : 1;
-      foodNative += ((item.adult_selling || 0) * (family.adults || 0) +
-        (item.child_selling || 0) * (family.children || 0) +
-        (item.infant_selling || 0) * (family.infants || 0)) * days;
+
+      const adultFood = applyFoodCharge(item.adult_selling || 0);
+      const childFood = applyFoodCharge(item.child_selling || 0);
+      const infantFood = applyFoodCharge(item.infant_selling || 0);
+
+      foodNative += (adultFood * (family.adults || 0) +
+        childFood * (family.children || 0) +
+        infantFood * (family.infants || 0)) * days;
     });
     const foodPKR = toPKR(foodNative, isFoodPKR);
 
@@ -1087,13 +1239,19 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       if (!zRow.ziarat_id) return;
       const item = ziaratPrices.find(z => String(z.id || z._id) === String(zRow.ziarat_id));
       if (!item) return;
-      ziaratNative += (item.adult_selling || 0) * (family.adults || 0) +
-        (item.child_selling || 0) * (family.children || 0) +
-        (item.infant_selling || 0) * (family.infants || 0);
+
+      const adultZ = applyZiaratCharge(item.adult_selling || 0);
+      const childZ = applyZiaratCharge(item.child_selling || 0);
+      const infantZ = applyZiaratCharge(item.infant_selling || 0);
+
+      ziaratNative += adultZ * (family.adults || 0) +
+        childZ * (family.children || 0) +
+        infantZ * (family.infants || 0);
     });
     const ziaratPKR = toPKR(ziaratNative, isZiaratPKR);
 
-    const netPKR = totalVisaPKR + totalTicketPKR + transportNet + accomPKR + foodPKR + ziaratPKR;
+    const rawSum = totalVisaPKR + totalTicketPKR + transportNet + accomPKR + foodPKR + ziaratPKR;
+    const netPKR = applyPackageCharge(rawSum);
 
     return {
       familyPax, netPKR,

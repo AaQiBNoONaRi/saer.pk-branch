@@ -7,6 +7,8 @@ import {
   Truck, Utensils, MapPin, FileText, Smartphone, Wallet
 } from 'lucide-react';
 
+import SearchableSelect from '../components/ui/SearchableSelect';
+
 const API = 'http://localhost:8000';
 const PKR = (n) => `PKR ${(Number(n) || 0).toLocaleString()}`;
 
@@ -129,7 +131,7 @@ const isPaxComplete = (p) => {
 /*  MAIN PAGE                                                                     */
 /* —————————————————————————————————————————————————————————————————————————— */
 
-const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines = [], onBack, resumeId }) => {
+const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines = [], onBack, resumeId, serviceChargeRule }) => {
   const [packageData, setPackageData] = useState(initialPackage || {});
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -147,7 +149,9 @@ const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines 
   const [paymentData, setPaymentData] = useState({
     amount: 0, date: new Date().toISOString().split('T')[0], note: '',
     bankName: '', depositorName: '', depositorCNIC: '', slipFile: null,
-    beneficiaryAccount: '', agentAccount: ''
+    beneficiaryAccount: '', agentAccount: '',
+    transferAccount: null, transferAccountName: '', transferPhone: '',
+    transferCNIC: '', transferAccountNumber: ''
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -530,7 +534,14 @@ const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines 
             <div className="text-right shrink-0">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Total</p>
               <p className="text-2xl font-black text-blue-600">{PKR(createdBooking?.total_amount || grandTotal)}</p>
-              <p className="text-[10px] font-bold text-slate-400">{createdBooking?.total_passengers || passengers.length} pax</p>
+              <div className="flex flex-col items-end">
+                <p className="text-[10px] font-bold text-slate-400">{createdBooking?.total_passengers || passengers.length} pax</p>
+                {serviceChargeRule && (
+                  <p className="text-[8px] font-bold text-emerald-600 uppercase flex items-center gap-1 mt-1">
+                    <ShieldCheck size={10} /> Inclusive of Service Charge
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1078,6 +1089,13 @@ const StepThreePayment = ({
         }
       }
 
+      if (paymentMethod === 'transfer' && (!paymentData.transferAccount || !paymentData.transferAccountNumber || !paymentData.transferAccountName || !paymentData.transferPhone || !paymentData.transferCNIC)) {
+        if (!window.confirm('⚠️ Transfer details incomplete. Continue anyway?')) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
 
       // Bank / Cash - Use centralized payments API
       const formData = new FormData();
@@ -1092,6 +1110,12 @@ const StepThreePayment = ({
         formData.append('bank_name', paymentData.bankName || '');
         formData.append('depositor_name', paymentData.depositorName || '');
         formData.append('depositor_cnic', paymentData.depositorCNIC || '');
+      } else if (paymentMethod === 'transfer') {
+        formData.append('beneficiary_account', paymentData.transferAccount || '');
+        formData.append('transfer_account_number', paymentData.transferAccountNumber || '');
+        formData.append('transfer_account', paymentData.transferAccountName || ''); // Backend uses 'transfer_account' for the Name
+        formData.append('transfer_phone', paymentData.transferPhone || '');
+        formData.append('transfer_cnic', paymentData.transferCNIC || '');
       } else {
         formData.append('beneficiary_account', paymentData.beneficiaryAccount || '');
         formData.append('agent_account', paymentData.agentAccount || '');
@@ -1225,6 +1249,12 @@ const StepThreePayment = ({
             onClick={() => setPaymentMethod('bank')}
           />
           <PaymentMethodCard
+            label="Transfer"
+            icon={<Landmark size={24} />}
+            active={paymentMethod === 'transfer'}
+            onClick={() => setPaymentMethod('transfer')}
+          />
+          <PaymentMethodCard
             label="Cash"
             icon={<Wallet size={24} />}
             active={paymentMethod === 'cash'}
@@ -1240,6 +1270,85 @@ const StepThreePayment = ({
         </div>
 
         {/* Bank / Cash Forms (Dynamic) */}
+        {paymentMethod === 'transfer' && (
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SearchableSelect
+                label="Organization Account *"
+                options={beneficiaryAccounts}
+                value={paymentData.transferAccount}
+                onChange={v => upd('transferAccount', v)}
+                placeholder="Search and select account..."
+              />
+              <InputField
+                label="Client Account Number (Sender) *"
+                placeholder="e.g. 10023456789"
+                value={paymentData.transferAccountNumber}
+                onChange={v => upd('transferAccountNumber', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField
+                label="Transfer Account Name *"
+                placeholder="e.g. John Doe"
+                value={paymentData.transferAccountName}
+                onChange={v => upd('transferAccountName', v)}
+              />
+              <InputField
+                label="Phone Number *"
+                placeholder="03001234567"
+                value={paymentData.transferPhone}
+                onChange={v => upd('transferPhone', v)}
+              />
+              <InputField
+                label="CNIC Number *"
+                placeholder="12345-1234567-1"
+                value={paymentData.transferCNIC}
+                onChange={v => upd('transferCNIC', v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InputField
+                label="Amount *"
+                type="number"
+                placeholder="0.00"
+                value={paymentData.amount}
+                onChange={v => upd('amount', parseFloat(v) || 0)}
+              />
+              <InputField
+                label="Date *"
+                type="date"
+                value={paymentData.date}
+                onChange={v => upd('date', v)}
+              />
+              <InputField
+                label="Note (Optional)"
+                placeholder="Add note"
+                value={paymentData.note}
+                onChange={v => upd('note', v)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Slip *</label>
+              {paymentData.slipFile ? (
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mt-2">
+                  <Check size={16} className="text-green-600" />
+                  <span className="text-xs font-black text-green-700 flex-1 truncate">{paymentData.slipFile.name}</span>
+                  <button onClick={() => upd('slipFile', null)} className="text-slate-400 hover:text-red-500"><X size={15} /></button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  ref={fileRef}
+                  accept="image/*,.pdf"
+                  onChange={e => { if (e.target.files[0]) upd('slipFile', e.target.files[0]); }}
+                  className="mt-2 w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 ring-blue-50 transition-all cursor-pointer"
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {(paymentMethod === 'bank') && (
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { MapPin, Search, MoveRight, Plane, Calendar, Users, DollarSign, ShoppingCart } from 'lucide-react';
+import { MapPin, Search, MoveRight, Plane, Calendar, Users, DollarSign, ShoppingCart, ShieldCheck } from 'lucide-react';
 import BookingPage from './BookingPage';
+import api from '../services/api';
 
 const TicketPage = ({ resumeId, clearResume }) => {
     const [tickets, setTickets] = useState([]);
@@ -28,21 +29,8 @@ const TicketPage = ({ resumeId, clearResume }) => {
                 throw new Error('Not logged in. Please login first.');
             }
 
-            const response = await fetch('http://localhost:8000/api/flights/', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Unauthorized. Your session may have expired. Please login again.');
-                }
-                throw new Error('Failed to fetch tickets');
-            }
-
-            const data = await response.json();
-            setTickets(data);
+            const response = await api.get('/api/flights/');
+            setTickets(response.data);
         } catch (err) {
             setError(err.message);
             console.error('Error fetching tickets:', err);
@@ -60,15 +48,8 @@ const TicketPage = ({ resumeId, clearResume }) => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/api/others/flight-iata?is_active=true', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setAirlines(data);
-            } else {
-                console.error('Failed to fetch airlines:', response.status);
-            }
+            const response = await api.get('/api/others/flight-iata?is_active=true');
+            setAirlines(response.data);
         } catch (error) {
             console.error('Error fetching airlines:', error);
         }
@@ -303,6 +284,9 @@ const TicketCard = ({ ticket, airlines, onBook }) => {
                         <div className="space-y-0.5">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Price Per Adult</p>
                             <p className="text-xl font-black text-[#3B82F6]">Rs. {selling.toLocaleString()}</p>
+                            <p className="text-[8px] font-bold text-emerald-600 uppercase flex items-center gap-1 mt-1">
+                                <ShieldCheck size={10} /> Inclusive of Service Charge
+                            </p>
                         </div>
                     </div>
                 </div>
