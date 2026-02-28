@@ -89,10 +89,11 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             isOpen={isSidebarOpen}
                             isExpanded={isEntitiesOpen}
                             onClick={() => setEntitiesOpen(!isEntitiesOpen)}
-                            active={['Agencies', 'Employees'].includes(activeTab)}
+                            active={['Agencies', 'Employees', 'HR Management'].includes(activeTab)}
                         >
                             <DropdownItem label="Agencies" active={activeTab === 'Agencies'} onClick={() => handleNavClick('Agencies')} />
                             <DropdownItem label="Employees" active={activeTab === 'Employees'} onClick={() => handleNavClick('Employees')} />
+                            <DropdownItem label="HR Management" active={activeTab === 'HR Management'} onClick={() => handleNavClick('HR Management')} />
                         </NavDropdown>
 
                         <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />

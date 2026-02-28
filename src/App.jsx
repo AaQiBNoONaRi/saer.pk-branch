@@ -17,6 +17,7 @@ import HotelInventory from './pages/HotelInventory';
 import PackageInventory from './pages/PackageInventory';
 import TicketInventory from './pages/TicketInventory';
 import BookingHistory from './pages/BookingHistory';
+import HRManagement from './pages/HRManagement';
 
 // --- SHARED UI COMPONENTS ---
 
@@ -272,6 +273,7 @@ const App = () => {
       case 'Bookings': return <BookingsPage />;
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
+      case 'HR Management': return <HRManagement />;
       case 'Booking History': return <BookingHistory />;
 
       // Default / Placeholder
