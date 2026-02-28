@@ -25,6 +25,7 @@ import CustomBookingPage from './pages/CustomBookingPage';
 import UmrahBookingPage from './pages/UmrahBookingPage';
 import BookingPage from './pages/BookingPage';
 import PaxMovement from './pages/PaxMovement';
+import CommissionEarnings from './pages/CommissionEarnings';
 
 // --- SHARED UI COMPONENTS ---
 
@@ -378,6 +379,7 @@ const App = () => {
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
       case 'HR Management': return <HRManagement />;
+      case 'Commission Earnings': return <CommissionEarnings />;
       case 'Booking History': return <BookingHistory />;
       case 'Pax Movement': return <PaxMovement />;
 

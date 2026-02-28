@@ -102,6 +102,8 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                                     <DropdownItem label="HR Management" active={activeTab === 'HR Management'} onClick={() => handleNavClick('HR Management')} />
                                 </NavDropdown>
 
+                                <NavItem icon={<PieChart size={20} />} label="Commission Earnings" active={activeTab === 'Commission Earnings'} onClick={() => handleNavClick('Commission Earnings')} isOpen={isSidebarOpen} />
+
                                 <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
