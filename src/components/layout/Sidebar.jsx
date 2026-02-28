@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { branchAuthAPI } from '../../services/api';
 
-export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSidebarOpen, setIsLoggedIn }) {
+export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSidebarOpen, setIsLoggedIn, userType = 'branch' }) {
     const [isUserMenuOpen, setUserMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isBookingsOpen, setBookingsOpen] = useState(false);
@@ -69,42 +69,48 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                     <NavGroup title="Main Menu" isOpen={isSidebarOpen}>
                         <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => handleNavClick('Dashboard')} isOpen={isSidebarOpen} />
 
-                        {/* Bookings dropdown — matches agency exactly */}
-                        <NavDropdown
-                            icon={<Ticket size={20} />}
-                            label="Bookings"
-                            isOpen={isSidebarOpen}
-                            isExpanded={isBookingsOpen}
-                            onClick={() => setBookingsOpen(!isBookingsOpen)}
-                            active={['Custom Umrah', 'Custom Umrah Booking', 'Umrah Package', 'Umrah Package Booking', 'Ticket'].includes(activeTab)}
-                        >
-                            <DropdownItem label="Custom Umrah" active={activeTab === 'Custom Umrah' || activeTab === 'Custom Umrah Booking'} onClick={() => handleNavClick('Custom Umrah')} />
-                            <DropdownItem label="Umrah Package" active={activeTab === 'Umrah Package' || activeTab === 'Umrah Package Booking'} onClick={() => handleNavClick('Umrah Package')} />
-                            <DropdownItem label="Ticket" active={activeTab === 'Ticket'} onClick={() => handleNavClick('Ticket')} />
-                        </NavDropdown>
+                        {/* Branch users see all nav items; employees only see Dashboard */}
+                        {userType === 'branch' && (
+                            <>
+                                {/* Bookings dropdown */}
+                                <NavDropdown
+                                    icon={<Ticket size={20} />}
+                                    label="Bookings"
+                                    isOpen={isSidebarOpen}
+                                    isExpanded={isBookingsOpen}
+                                    onClick={() => setBookingsOpen(!isBookingsOpen)}
+                                    active={['Custom Umrah', 'Custom Umrah Booking', 'Umrah Package', 'Umrah Package Booking', 'Ticket'].includes(activeTab)}
+                                >
+                                    <DropdownItem label="Custom Umrah" active={activeTab === 'Custom Umrah' || activeTab === 'Custom Umrah Booking'} onClick={() => handleNavClick('Custom Umrah')} />
+                                    <DropdownItem label="Umrah Package" active={activeTab === 'Umrah Package' || activeTab === 'Umrah Package Booking'} onClick={() => handleNavClick('Umrah Package')} />
+                                    <DropdownItem label="Ticket" active={activeTab === 'Ticket'} onClick={() => handleNavClick('Ticket')} />
+                                </NavDropdown>
 
-                        <NavDropdown
-                            icon={<UsersRound size={20} />}
-                            label="Entities"
-                            isOpen={isSidebarOpen}
-                            isExpanded={isEntitiesOpen}
-                            onClick={() => setEntitiesOpen(!isEntitiesOpen)}
-                            active={['Agencies', 'Employees', 'HR Management'].includes(activeTab)}
-                        >
-                            <DropdownItem label="Agencies" active={activeTab === 'Agencies'} onClick={() => handleNavClick('Agencies')} />
-                            <DropdownItem label="Employees" active={activeTab === 'Employees'} onClick={() => handleNavClick('Employees')} />
-                            <DropdownItem label="HR Management" active={activeTab === 'HR Management'} onClick={() => handleNavClick('HR Management')} />
-                        </NavDropdown>
+                                <NavDropdown
+                                    icon={<UsersRound size={20} />}
+                                    label="Entities"
+                                    isOpen={isSidebarOpen}
+                                    isExpanded={isEntitiesOpen}
+                                    onClick={() => setEntitiesOpen(!isEntitiesOpen)}
+                                    active={['Agencies', 'Employees', 'HR Management'].includes(activeTab)}
+                                >
+                                    <DropdownItem label="Agencies" active={activeTab === 'Agencies'} onClick={() => handleNavClick('Agencies')} />
+                                    <DropdownItem label="Employees" active={activeTab === 'Employees'} onClick={() => handleNavClick('Employees')} />
+                                    <DropdownItem label="HR Management" active={activeTab === 'HR Management'} onClick={() => handleNavClick('HR Management')} />
+                                </NavDropdown>
 
-                        <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<History size={20} />} label="Booking History" active={activeTab === 'Booking History'} onClick={() => handleNavClick('Booking History')} isOpen={isSidebarOpen} />
-                        <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
-                    </NavGroup>
-                </nav>
+                                <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
+                                <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
+                                <NavItem icon={<History size={20} />} label="Booking History" active={activeTab === 'Booking History'} onClick={() => handleNavClick('Booking History')} isOpen={isSidebarOpen} />
+                                <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
+                            </>
+                        )
+                        }
+                    </NavGroup >
+                </nav >
 
                 {/* Footer */}
-                <div className="p-4 border-t bg-slate-50 shrink-0 relative">
+                < div className="p-4 border-t bg-slate-50 shrink-0 relative" >
                     {isUserMenuOpen && isSidebarOpen && (
                         <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-200 z-[60]">
                             <button
@@ -139,8 +145,8 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             <ChevronUp size={16} className={`text-slate-300 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
                         )}
                     </div>
-                </div>
-            </aside>
+                </div >
+            </aside >
         </>
     );
 }

@@ -229,6 +229,22 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Check authentication on mount
+  const [userType, setUserType] = useState('branch'); // 'branch' | 'employee'
+  const [editingAccount, setEditingAccount] = useState(null);
+
+  // Umrah Package booking state
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [bookingFlights, setBookingFlights] = useState([]);
+  const [bookingAirlines, setBookingAirlines] = useState([]);
+
+  // Custom Umrah (Calculator → Booking) state
+  const [customBookingData, setCustomBookingData] = useState(null);
+
+  // Booking Voucher / Invoice state
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedBookingType, setSelectedBookingType] = useState(null);
+
+  // Check auth on mount
   useEffect(() => {
     const checkAuth = () => {
       if (branchAuthAPI.isAuthenticated()) {
@@ -240,11 +256,19 @@ const App = () => {
       }
     };
     checkAuth();
+    if (branchAuthAPI.isAuthenticated()) {
+      const userData = branchAuthAPI.getUserData();
+      setBranchData(userData);
+      // Determine stored type — employee_data in localStorage means employee
+      const type = localStorage.getItem('employee_data') ? 'employee' : 'branch';
+      setUserType(type);
+      setIsLoggedIn(true);
+    }
   }, []);
 
-  const handleLogin = () => {
-    const data = branchAuthAPI.getUserData();
-    setBranchData(data);
+  const handleLogin = (mode = 'branch') => {
+    setBranchData(branchAuthAPI.getUserData());
+    setUserType(mode);
     setIsLoggedIn(true);
   };
 
@@ -297,6 +321,7 @@ const App = () => {
         isSidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         setIsLoggedIn={setIsLoggedIn}
+        userType={userType}
       />
 
       {/* Main Panel */}

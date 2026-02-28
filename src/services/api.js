@@ -100,9 +100,9 @@ export const branchAuthAPI = {
      * @param {string} empId
      * @param {string} password
      */
-    loginEmployee: async (empId, password) => {
-        const response = await api.post('/api/employees/login', {
-            emp_id: empId,
+    loginEmployee: async (email, password) => {
+        const response = await api.post('/api/employees/login-email', {
+            email,
             password,
         });
 
