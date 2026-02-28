@@ -7,7 +7,7 @@ import {
 
 import BranchLoginPage from './components/BranchLoginPage';
 import Sidebar from './components/layout/Sidebar';
-import { branchAuthAPI } from './services/api';
+import { branchAuthAPI, branchAPI, serviceChargeAPI } from './services/api';
 
 // Pages
 import AgencyManagement from './pages/AgencyManagement';
@@ -17,6 +17,13 @@ import HotelInventory from './pages/HotelInventory';
 import PackageInventory from './pages/PackageInventory';
 import TicketInventory from './pages/TicketInventory';
 import BookingHistory from './pages/BookingHistory';
+import UmrahCalculator from './pages/UmrahCalculator';
+import UmrahPackagePage from './pages/UmrahPackagePage';
+import TicketPage from './pages/TicketPage';
+import CustomBookingPage from './pages/CustomBookingPage';
+import UmrahBookingPage from './pages/UmrahBookingPage';
+import BookingPage from './pages/BookingPage';
+import PaxMovement from './pages/PaxMovement';
 
 // --- SHARED UI COMPONENTS ---
 
@@ -226,6 +233,7 @@ const App = () => {
   const [branchData, setBranchData] = useState(null);
   const [currentPage, setCurrentPage] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [serviceChargeRule, setServiceChargeRule] = useState(null);
 
   // Check authentication on mount
   const [userType, setUserType] = useState('branch'); // 'branch' | 'employee'
@@ -242,28 +250,47 @@ const App = () => {
   // Booking Voucher / Invoice state
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedBookingType, setSelectedBookingType] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Check auth on mount
   useEffect(() => {
     const checkAuth = () => {
       if (branchAuthAPI.isAuthenticated()) {
-        const data = branchAuthAPI.getUserData(); // Use getUserData to support employees too
+        const data = branchAuthAPI.getUserData();
         setBranchData(data);
         setIsLoggedIn(true);
+
+        // Determine stored type — employee_data in localStorage means employee
+        const type = localStorage.getItem('employee_data') ? 'employee' : 'branch';
+        setUserType(type);
       } else {
         setIsLoggedIn(false);
       }
     };
     checkAuth();
-    if (branchAuthAPI.isAuthenticated()) {
-      const userData = branchAuthAPI.getUserData();
-      setBranchData(userData);
-      // Determine stored type — employee_data in localStorage means employee
-      const type = localStorage.getItem('employee_data') ? 'employee' : 'branch';
-      setUserType(type);
-      setIsLoggedIn(true);
-    }
   }, []);
+
+  // Fetch service charge rule when branch data is available
+  useEffect(() => {
+    const fetchServiceCharge = async () => {
+      if (isLoggedIn && branchData) {
+        try {
+          const branchId = branchData.type === 'branch' ? (branchData.id || branchData._id) : branchData.entity_id;
+          if (branchId) {
+            const fullBranch = await branchAPI.getOne(branchId);
+            if (fullBranch.service_charge_group_id) {
+              const rule = await serviceChargeAPI.getOne(fullBranch.service_charge_group_id);
+              console.log('🛡️ Service Charge Rule Active:', rule.name);
+              setServiceChargeRule(rule);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch service charge rule:', err);
+        }
+      }
+    };
+    fetchServiceCharge();
+  }, [isLoggedIn, branchData]);
 
   const handleLogin = (mode = 'branch') => {
     const data = branchAuthAPI.getUserData();
@@ -294,10 +321,53 @@ const App = () => {
       case 'Inventory/Flights': return <FlightInventory />;
 
       // Operations
-      case 'Bookings': return <BookingsPage />;
+      case 'Custom Umrah':
+        return <UmrahCalculator
+          serviceChargeRule={serviceChargeRule}
+          onBookCustomPackage={(data) => {
+            setCustomBookingData(data);
+            setCurrentPage('Custom Umrah Booking');
+          }} />;
+      case 'Custom Umrah Booking':
+        return <CustomBookingPage
+          customBookingData={customBookingData}
+          serviceChargeRule={serviceChargeRule}
+          onBack={() => setCurrentPage('Custom Umrah')}
+        />;
+      case 'Umrah Package':
+        return <UmrahPackagePage
+          serviceChargeRule={serviceChargeRule}
+          onBookPackage={(pkg, flights, airlines) => {
+            setSelectedPackage(pkg);
+            setBookingFlights(flights);
+            setBookingAirlines(airlines);
+            setCurrentPage('Umrah Package Booking');
+          }} />;
+      case 'Umrah Package Booking':
+        return <UmrahBookingPage
+          selectedPackage={selectedPackage}
+          flights={bookingFlights}
+          airlines={bookingAirlines}
+          serviceChargeRule={serviceChargeRule}
+          onBack={() => setCurrentPage('Umrah Package')}
+        />;
+      case 'Ticket':
+        return <TicketPage
+          serviceChargeRule={serviceChargeRule}
+          onBookTicket={(ticket) => {
+            setSelectedTicket(ticket);
+            setCurrentPage('Ticket Booking');
+          }} />;
+      case 'Ticket Booking':
+        return <BookingPage
+          selectedTicket={selectedTicket}
+          serviceChargeRule={serviceChargeRule}
+          onBack={() => setCurrentPage('Ticket')}
+        />;
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
       case 'Booking History': return <BookingHistory />;
+      case 'Pax Movement': return <PaxMovement />;
 
       // Default / Placeholder
       default: return (

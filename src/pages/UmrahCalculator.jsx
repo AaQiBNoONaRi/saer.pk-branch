@@ -20,7 +20,7 @@ const ROOM_CAPACITIES = {
     'Sharing': 999 // Sharing has unlimited capacity
 };
 
-const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
+const AgentUmrahCalculator = ({ onBookCustomPackage, serviceChargeRule }) => {
     const [currentStep, setCurrentStep] = useState(1);
 
     // State Management
@@ -892,6 +892,40 @@ const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
 
     // --- PRICING LOGIC ---
 
+    const applyTicketCharge = (basePrice) => {
+        if (!serviceChargeRule) return basePrice;
+        const charge = serviceChargeRule.ticket_charge || 0;
+        const type = serviceChargeRule.ticket_charge_type || 'fixed';
+        if (type === 'percentage') {
+            return basePrice + (basePrice * (charge / 100));
+        }
+        return basePrice + charge;
+    };
+
+    const applyPackageCharge = (basePrice) => {
+        if (!serviceChargeRule) return basePrice;
+        const charge = serviceChargeRule.package_charge || 0;
+        const type = serviceChargeRule.package_charge_type || 'fixed';
+        if (type === 'percentage') {
+            return basePrice + (basePrice * (charge / 100));
+        }
+        return basePrice + charge;
+    };
+
+    const applyHotelCharge = (basePrice, hotelId, roomType) => {
+        if (!serviceChargeRule || !hotelId) return basePrice;
+        const hotelCharges = serviceChargeRule.hotel_charges || [];
+        const keySuffix = roomType ? `${roomType.toLowerCase()}_charge` : '';
+
+        for (const period of hotelCharges) {
+            if (period.hotels?.includes(hotelId)) {
+                const override = period[keySuffix] || 0;
+                return basePrice + override;
+            }
+        }
+        return basePrice;
+    };
+
     const calculatePrices = () => {
         const totalPax = passengers.adults + passengers.children + passengers.infants;
         const exchangeRate = riyalRate?.rate || 1;
@@ -1022,7 +1056,8 @@ const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
                 const roomType = assignment.roomType || '-';
                 const rate = Number(assignment.rate_sar) || 0;
                 const qty = assignment.qty || 1;
-                const netNative = rate * qty * nights;
+                const baseNetNative = (rate * qty * nights);
+                const netNative = applyHotelCharge(rate, hotelRow.hotel_id, roomType) * qty * nights;
                 accomNative += netNative;
                 accommodationRows.push({
                     hotel_name: hotelRow.hotel_name || '-',
@@ -1040,7 +1075,7 @@ const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
         const accomPKR = toPKR(accomNative, isHotelPKR);
 
         // --- Transport ---
-        const transportRate = selectedVehicle ? (selectedVehicle.adult_selling || 0) : 0;
+        const transportRate = selectedVehicle ? applyTicketCharge(selectedVehicle.adult_selling || 0) : 0;
         const transportNative = transportRate * familyPax;
         const transportNetPKR = toPKR(transportNative, isTransPKR);
 
@@ -1057,9 +1092,9 @@ const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
         const totalVisaPKR = toPKR(totalVisaNative, isVisaPKR);
 
         // --- Tickets (always PKR) ---
-        const adultTicket = selectedFlight ? (selectedFlight.adult_selling || 0) : 0;
-        const childTicket = selectedFlight ? (selectedFlight.child_selling || 0) : 0;
-        const infantTicket = selectedFlight ? (selectedFlight.infant_selling || 0) : 0;
+        const adultTicket = selectedFlight ? applyTicketCharge(selectedFlight.adult_selling || 0) : 0;
+        const childTicket = selectedFlight ? applyTicketCharge(selectedFlight.child_selling || 0) : 0;
+        const infantTicket = selectedFlight ? applyTicketCharge(selectedFlight.infant_selling || 0) : 0;
         const totalTicketPKR = (adultTicket * (family.adults || 0)) +
             (childTicket * (family.children || 0)) +
             (infantTicket * (family.infants || 0));
@@ -1090,7 +1125,13 @@ const AgentUmrahCalculator = ({ onBookCustomPackage }) => {
         const ziaratPKR = toPKR(ziaratNative, isZiaratPKR);
 
         // --- Net PKR ---
-        const netPKR = totalVisaPKR + totalTicketPKR + transportNetPKR + accomPKR + foodPKR + ziaratPKR;
+        let netPKR = totalVisaPKR + totalTicketPKR + transportNetPKR + accomPKR + foodPKR + ziaratPKR;
+
+        // --- Apply Package Service Charge (only if it's considered a package) ---
+        // For custom calculator, we treat any multi-service selection as a package
+        if (selectedOptions.some(id => id.includes('visa') || id.includes('hotel'))) {
+            netPKR = applyPackageCharge(netPKR);
+        }
 
         return {
             familyPax,

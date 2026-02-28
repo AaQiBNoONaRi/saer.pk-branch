@@ -131,7 +131,7 @@ const isPaxComplete = (p) => {
 /*  MAIN PAGE                                                                     */
 /* —————————————————————————————————————————————————————————————————————————— */
 
-const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines = [], onBack, resumeId }) => {
+const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines = [], onBack, resumeId, serviceChargeRule }) => {
   const [packageData, setPackageData] = useState(initialPackage || {});
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -534,7 +534,14 @@ const UmrahBookingPage = ({ packageData: initialPackage, flights = [], airlines 
             <div className="text-right shrink-0">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Total</p>
               <p className="text-2xl font-black text-blue-600">{PKR(createdBooking?.total_amount || grandTotal)}</p>
-              <p className="text-[10px] font-bold text-slate-400">{createdBooking?.total_passengers || passengers.length} pax</p>
+              <div className="flex flex-col items-end">
+                <p className="text-[10px] font-bold text-slate-400">{createdBooking?.total_passengers || passengers.length} pax</p>
+                {serviceChargeRule && (
+                  <p className="text-[8px] font-bold text-emerald-600 uppercase flex items-center gap-1 mt-1">
+                    <ShieldCheck size={10} /> Inclusive of Service Charge
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

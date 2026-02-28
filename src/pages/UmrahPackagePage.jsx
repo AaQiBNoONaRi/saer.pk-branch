@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Building2, Truck, ShieldCheck, Plane, Utensils, DollarSign, ShoppingCart } from 'lucide-react';
+import api from '../services/api';
 
 const UmrahPackagePage = ({ onBookPackage }) => {
     const [packages, setPackages] = useState([]);
@@ -17,19 +18,8 @@ const UmrahPackagePage = ({ onBookPackage }) => {
                 return;
             }
 
-            const response = await fetch('http://localhost:8000/api/packages/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    console.error('Unauthorized. Session may have expired.');
-                }
-                throw new Error(`Failed to fetch packages: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setPackages(data);
+            const response = await api.get('/api/packages/');
+            setPackages(response.data);
         } catch (error) {
             console.error('Error fetching packages:', error);
         } finally {
@@ -46,13 +36,8 @@ const UmrahPackagePage = ({ onBookPackage }) => {
     const fetchFlights = async () => {
         try {
             const token = localStorage.getItem('branch_access_token');
-            const response = await fetch('http://localhost:8000/api/flights/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setFlights(data);
-            }
+            const response = await api.get('/api/flights/');
+            setFlights(response.data);
         } catch (error) {
             console.error('Error fetching flights:', error);
         }
@@ -61,13 +46,8 @@ const UmrahPackagePage = ({ onBookPackage }) => {
     const fetchAirlines = async () => {
         try {
             const token = localStorage.getItem('branch_access_token');
-            const response = await fetch('http://localhost:8000/api/others/flight-iata?is_active=true', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setAirlines(data);
-            }
+            const response = await api.get('/api/others/flight-iata?is_active=true');
+            setAirlines(response.data);
         } catch (error) {
             console.error('Error fetching airlines:', error);
         }
@@ -235,18 +215,18 @@ const UmrahPackageCard = ({ packageData, onBook, flights = [], airlines = [] }) 
                                 {/* Outbound */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Outbound</p>
-                                            <p className="text-xs font-black text-slate-900">{flight?.airline || 'N/A'}</p>
-                                            {flight?.departure_time || flight?.arrival_time ? (
-                                                <p className="text-[10px] text-slate-500 mt-1">{flight?.departure_time ? `Dep: ${flight.departure_time}` : ''}{flight?.arrival_time ? (flight.departure_time ? `  •  Arr: ${flight.arrival_time}` : `Arr: ${flight.arrival_time}`) : ''}</p>
-                                            ) : null}
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Route</p>
-                                            <p className="text-xs font-black text-slate-900">
-                                                {flight?.departure_city || 'N/A'} <span className="text-slate-400">→</span> {flight?.arrival_city || 'N/A'}
-                                            </p>
-                                        </div>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Outbound</p>
+                                        <p className="text-xs font-black text-slate-900">{flight?.airline || 'N/A'}</p>
+                                        {flight?.departure_time || flight?.arrival_time ? (
+                                            <p className="text-[10px] text-slate-500 mt-1">{flight?.departure_time ? `Dep: ${flight.departure_time}` : ''}{flight?.arrival_time ? (flight.departure_time ? `  •  Arr: ${flight.arrival_time}` : `Arr: ${flight.arrival_time}`) : ''}</p>
+                                        ) : null}
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Route</p>
+                                        <p className="text-xs font-black text-slate-900">
+                                            {flight?.departure_city || 'N/A'} <span className="text-slate-400">→</span> {flight?.arrival_city || 'N/A'}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Return (if available) */}
@@ -277,11 +257,17 @@ const UmrahPackageCard = ({ packageData, onBook, flights = [], airlines = [] }) 
                 {/* Right Column: Pricing (5 cols) */}
                 <div className="lg:col-span-5">
                     <div className="bg-slate-900 rounded-[32px] p-6 text-white h-full">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-white/10 rounded-xl">
-                                <DollarSign size={18} className="text-emerald-400" />
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/10 rounded-xl">
+                                    <DollarSign size={18} className="text-emerald-400" />
+                                </div>
+                                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Package Pricing</span>
                             </div>
-                            <span className="text-xs font-black uppercase tracking-widest text-slate-400">Package Pricing</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                                <ShieldCheck size={12} className="text-emerald-400" />
+                                <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-wider">Inclusive Price</span>
+                            </div>
                         </div>
 
                         <div className="space-y-4">

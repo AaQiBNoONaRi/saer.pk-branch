@@ -4,7 +4,7 @@ import {
   Plane, Building2, Users, ChevronDown, ChevronUp,
   CheckCircle, ArrowLeft, Clock, Upload, X, Check,
   CreditCard, ArrowRight, FileText, Smartphone, Wallet,
-  Truck, Utensils, MapPin, Globe, Star, Building, Info, Landmark
+  Truck, Utensils, MapPin, Globe, Star, Building, Info, Landmark, ShieldCheck
 } from 'lucide-react';
 
 import SearchableSelect from '../components/ui/SearchableSelect';
@@ -427,7 +427,7 @@ const StepTwoReview = ({
 }) => {
   const {
     selectedFlight, selectedVehicle, selectedVisaRate,
-    hotelRows = [], selectedOptions = [], riyalRate
+    hotelRows = [], selectedOptions = [], riyalRate, serviceChargeRule
   } = calculatorData;
 
   const hasService = (name) => selectedOptions.some(opt => opt.toLowerCase().includes(name));
@@ -460,9 +460,17 @@ const StepTwoReview = ({
       {/* ══ RIGHT — Price Card ══ */}
       <div className="lg:col-span-5">
         <div className="bg-white rounded-3xl border-2 border-blue-50 shadow-lg overflow-hidden sticky top-6">
-          <div className="p-6 border-b border-slate-100 bg-blue-50/30">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Price Breakdown</h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{passengers.length} Passengers · {familyInvoices.length} Famil{familyInvoices.length === 1 ? 'y' : 'ies'}</p>
+          <div className="p-6 border-b border-slate-100 bg-blue-50/30 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Price Breakdown</h3>
+              <p className="text-[10px] font-bold text-slate-400 mt-0.5">{passengers.length} Passengers · {familyInvoices.length} Famil{familyInvoices.length === 1 ? 'y' : 'ies'}</p>
+            </div>
+            {serviceChargeRule && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <ShieldCheck size={12} className="text-emerald-400" />
+                <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-wider">Inclusive Price</span>
+              </div>
+            )}
           </div>
           <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
             {familyInvoices.map((inv, fi) => (
@@ -1104,6 +1112,57 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
     }
   }, [resumeId]);
 
+  // ── Service Charge Helpers ──
+  const applyHotelCharge = (basePrice, hotelId, roomType) => {
+    if (!serviceChargeRule) return basePrice;
+    const rule = serviceChargeRule;
+    let charge = rule.hotel_charge || 0;
+    const type = rule.hotel_charge_type || 'fixed';
+
+    if (rule.hotel_overrides && hotelId && roomType) {
+      const override = rule.hotel_overrides.find(o => String(o.hotel_id) === String(hotelId) && o.room_type === roomType);
+      if (override) charge = override.charge;
+    }
+
+    if (type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyVisaCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.visa_charge || 0;
+    if (serviceChargeRule.visa_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyTransportCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.transport_charge || 0;
+    if (serviceChargeRule.transport_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyFoodCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.food_charge || 0;
+    if (serviceChargeRule.food_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyZiaratCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.ziarat_charge || 0;
+    if (serviceChargeRule.ziarat_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
+  const applyPackageCharge = (basePrice) => {
+    if (!serviceChargeRule) return basePrice;
+    const charge = serviceChargeRule.package_charge || 0;
+    if (serviceChargeRule.package_charge_type === 'percentage') return basePrice + (basePrice * (charge / 100));
+    return basePrice + charge;
+  };
+
   // ── Pricing helpers ──
   const buildFamilyInvoice = (family, fi) => {
     const exchangeRate = riyalRate?.rate || 1;
@@ -1120,20 +1179,31 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       Object.entries(family.assignments).forEach(([hotelId, asgn]) => {
         const hotelRow = hotelRows.find(h => String(h.id) === String(hotelId));
         if (!hotelRow) return;
-        accomNative += (asgn.rate_sar || 0) * (asgn.qty || 1) * (hotelRow.total_nights || 0);
+        const baseRate = asgn.rate_sar || 0;
+        const inclusiveRate = applyHotelCharge(baseRate, hotelId, asgn.roomType || asgn.room_type);
+        accomNative += inclusiveRate * (asgn.qty || 1) * (hotelRow.total_nights || 0);
       });
     }
     const accomPKR = toPKR(accomNative, isHotelPKR);
 
     // Transport — adult_selling is the native rate (SAR or PKR depending on flag)
-    const transportNative = (selectedVehicle?.adult_selling || 0) * familyPax;
+    const transportBase = (selectedVehicle?.adult_selling || 0);
+    const transportInclusive = applyTransportCharge(transportBase);
+    const transportNative = transportInclusive * familyPax;
     const transportNet = toPKR(transportNative, isTransPKR);
 
     // Visa — native rate (SAR or PKR depending on flag)
-    const adultVisaNative = Number(selectedVisaRate?.adult_selling || selectedVisaRate?.adult_rate || 0);
-    const childVisaNative = Number(selectedVisaRate?.child_selling || selectedVisaRate?.child_rate || 0);
-    const infantVisaNative = Number(selectedVisaRate?.infant_selling || selectedVisaRate?.infant_rate || 0);
-    const totalVisaNative = (adultVisaNative * (family.adults || 0)) + (childVisaNative * (family.children || 0)) + (infantVisaNative * (family.infants || 0));
+    const adultVisaBase = Number(selectedVisaRate?.adult_selling || selectedVisaRate?.adult_rate || 0);
+    const childVisaBase = Number(selectedVisaRate?.child_selling || selectedVisaRate?.child_rate || 0);
+    const infantVisaBase = Number(selectedVisaRate?.infant_selling || selectedVisaRate?.infant_rate || 0);
+
+    const adultVisaInclusive = applyVisaCharge(adultVisaBase);
+    const childVisaInclusive = applyVisaCharge(childVisaBase);
+    const infantVisaInclusive = applyVisaCharge(infantVisaBase);
+
+    const totalVisaNative = (adultVisaInclusive * (family.adults || 0)) +
+      (childVisaInclusive * (family.children || 0)) +
+      (infantVisaInclusive * (family.infants || 0));
     const totalVisaPKR = toPKR(totalVisaNative, isVisaPKR);
 
     // Tickets — always PKR
@@ -1151,9 +1221,14 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       const start = foodRow.startDate ? new Date(foodRow.startDate) : null;
       const end = foodRow.endDate ? new Date(foodRow.endDate) : null;
       const days = start && end ? Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24))) : 1;
-      foodNative += ((item.adult_selling || 0) * (family.adults || 0) +
-        (item.child_selling || 0) * (family.children || 0) +
-        (item.infant_selling || 0) * (family.infants || 0)) * days;
+
+      const adultFood = applyFoodCharge(item.adult_selling || 0);
+      const childFood = applyFoodCharge(item.child_selling || 0);
+      const infantFood = applyFoodCharge(item.infant_selling || 0);
+
+      foodNative += (adultFood * (family.adults || 0) +
+        childFood * (family.children || 0) +
+        infantFood * (family.infants || 0)) * days;
     });
     const foodPKR = toPKR(foodNative, isFoodPKR);
 
@@ -1164,13 +1239,19 @@ const CustomBookingPage = ({ calculatorData: initialData, onBack, resumeId }) =>
       if (!zRow.ziarat_id) return;
       const item = ziaratPrices.find(z => String(z.id || z._id) === String(zRow.ziarat_id));
       if (!item) return;
-      ziaratNative += (item.adult_selling || 0) * (family.adults || 0) +
-        (item.child_selling || 0) * (family.children || 0) +
-        (item.infant_selling || 0) * (family.infants || 0);
+
+      const adultZ = applyZiaratCharge(item.adult_selling || 0);
+      const childZ = applyZiaratCharge(item.child_selling || 0);
+      const infantZ = applyZiaratCharge(item.infant_selling || 0);
+
+      ziaratNative += adultZ * (family.adults || 0) +
+        childZ * (family.children || 0) +
+        infantZ * (family.infants || 0);
     });
     const ziaratPKR = toPKR(ziaratNative, isZiaratPKR);
 
-    const netPKR = totalVisaPKR + totalTicketPKR + transportNet + accomPKR + foodPKR + ziaratPKR;
+    const rawSum = totalVisaPKR + totalTicketPKR + transportNet + accomPKR + foodPKR + ziaratPKR;
+    const netPKR = applyPackageCharge(rawSum);
 
     return {
       familyPax, netPKR,
