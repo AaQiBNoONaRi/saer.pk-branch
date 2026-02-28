@@ -374,13 +374,38 @@ function DashboardTab() {
                 {/* Recent Activity (Spans 2 columns) */}
                 <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col min-h-[300px]">
                     <p className="text-xs font-bold text-slate-600 mb-4">Recent Activity</p>
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                        <div className="bg-amber-50 p-3 rounded-full mb-3">
-                            <ClipboardList size={24} className="text-amber-600/50" />
+
+                    {stats.recent_activities && stats.recent_activities.length > 0 ? (
+                        <div className="flex-1 flex flex-col gap-3">
+                            {stats.recent_activities.map((activity, i) => (
+                                <div key={i} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <div className={`p-2 rounded-lg ${activity.type === 'attendance' ? 'bg-blue-50 text-blue-600' :
+                                        activity.type === 'movement' ? 'bg-purple-50 text-purple-600' :
+                                            'bg-amber-50 text-amber-600'
+                                        }`}>
+                                        {activity.type === 'attendance' ? <Calendar size={16} /> :
+                                            activity.type === 'movement' ? <PersonStanding size={16} /> :
+                                                <ClipboardList size={16} />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-slate-800">{activity.emp_name || activity.emp_id}</p>
+                                        <p className="text-[11px] text-slate-500 font-medium">{activity.action}</p>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                        {activity.time ? new Date(activity.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
-                        <p className="text-sm font-bold text-slate-700">No recent activity</p>
-                        <p className="text-[11px] font-medium text-slate-400 mt-1">Check-ins, movements, and approvals will appear here</p>
-                    </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            <div className="bg-amber-50 p-3 rounded-full mb-3">
+                                <ClipboardList size={24} className="text-amber-600/50" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-700">No recent activity</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-1">Check-ins, movements, and approvals will appear here</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Side Column (Notifications & Quick Actions) */}
@@ -388,15 +413,28 @@ function DashboardTab() {
 
                     {/* Notifications */}
                     <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex-1">
-                        <p className="text-xs font-bold text-slate-600 mb-4">Notifications</p>
-                        {stats.pending_leave_requests > 0 ? (
-                            <div className="text-xs text-slate-600">
-                                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold">
-                                    {stats.pending_leave_requests} pending approval{stats.pending_leave_requests > 1 ? 's' : ''}
-                                </span>
+                        <p className="text-xs font-bold text-slate-600 mb-4">Approval Notifications</p>
+
+                        {stats.approval_notifications && stats.approval_notifications.length > 0 ? (
+                            <div className="space-y-3">
+                                {stats.approval_notifications.map(req => (
+                                    <div
+                                        key={req._id}
+                                        onClick={() => window.dispatchEvent(new CustomEvent('navigate-hr-tab', { detail: 'approvals' }))}
+                                        className="cursor-pointer group flex items-start gap-3 p-3 rounded-xl bg-orange-50 border border-orange-100 hover:bg-orange-100 transition-colors"
+                                    >
+                                        <div className="p-1.5 bg-orange-200 text-orange-700 rounded-lg">
+                                            <AlertCircle size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-bold text-orange-800">New {req.request_type.replace('_', ' ')} logic</p>
+                                            <p className="text-[10px] text-orange-600/80 font-medium">{req.emp_name}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
-                            <p className="text-[11px] font-medium text-slate-400">No pending notifications</p>
+                            <p className="text-[11px] font-medium text-slate-400 text-center py-4">No pending approvals</p>
                         )}
                     </div>
 
@@ -1434,8 +1472,8 @@ function ApprovalsTab() {
 
     const handleApprove = async (requestId) => {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('admin_data') || '{}');
-            await hrService.approveLeaveRequest(requestId, currentUser.email || currentUser.emp_id);
+            const currentUser = JSON.parse(localStorage.getItem('branch_data') || localStorage.getItem('admin_data') || '{}');
+            await hrService.approveLeaveRequest(requestId, currentUser.email || currentUser.username || currentUser.emp_id || 'System');
             alert('Request approved successfully');
             loadData();
         } catch (error) {
@@ -1445,8 +1483,8 @@ function ApprovalsTab() {
 
     const handleReject = async (requestId) => {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('admin_data') || '{}');
-            await hrService.rejectLeaveRequest(requestId, currentUser.email || currentUser.emp_id);
+            const currentUser = JSON.parse(localStorage.getItem('branch_data') || localStorage.getItem('admin_data') || '{}');
+            await hrService.rejectLeaveRequest(requestId, currentUser.email || currentUser.username || currentUser.emp_id || 'System');
             alert('Request rejected successfully');
             loadData();
         } catch (error) {
@@ -2116,14 +2154,14 @@ function PunctualityTab() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-lg ${['bg-indigo-600', 'bg-purple-600', 'bg-blue-600', 'bg-cyan-600', 'bg-teal-600'][idx % 5]} text-white flex items-center justify-center font-bold text-lg shadow-sm`}>
-                                                    {emp.full_name?.charAt(0).toUpperCase() || '?'}
+                                                    {emp.full_name?.charAt(0).toUpperCase() || emp.name?.charAt(0).toUpperCase() || '?'}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-800 leading-tight mb-0.5">
-                                                        {emp.full_name?.toUpperCase() || 'Unknown'}
+                                                        {emp.full_name || emp.name || emp.emp_id}
                                                     </p>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        {emp.designation || 'N/A'}
+                                                        {emp.designation || 'EMPLOYEE'}
                                                     </p>
                                                 </div>
                                             </div>
