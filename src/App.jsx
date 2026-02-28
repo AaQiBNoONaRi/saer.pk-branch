@@ -17,6 +17,7 @@ import HotelInventory from './pages/HotelInventory';
 import PackageInventory from './pages/PackageInventory';
 import TicketInventory from './pages/TicketInventory';
 import BookingHistory from './pages/BookingHistory';
+import HRManagement from './pages/HRManagement';
 import UmrahCalculator from './pages/UmrahCalculator';
 import UmrahPackagePage from './pages/UmrahPackagePage';
 import TicketPage from './pages/TicketPage';
@@ -376,6 +377,7 @@ const App = () => {
         />;
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
+      case 'HR Management': return <HRManagement />;
       case 'Booking History': return <BookingHistory />;
       case 'Pax Movement': return <PaxMovement />;
 

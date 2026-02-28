@@ -95,22 +95,24 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                                     isOpen={isSidebarOpen}
                                     isExpanded={isEntitiesOpen}
                                     onClick={() => setEntitiesOpen(!isEntitiesOpen)}
-                                    active={['Agencies', 'Employees'].includes(activeTab)}
+                                    active={['Agencies', 'Employees', 'HR Management'].includes(activeTab)}
                                 >
                                     <DropdownItem label="Agencies" active={activeTab === 'Agencies'} onClick={() => handleNavClick('Agencies')} />
                                     <DropdownItem label="Employees" active={activeTab === 'Employees'} onClick={() => handleNavClick('Employees')} />
+                                    <DropdownItem label="HR Management" active={activeTab === 'HR Management'} onClick={() => handleNavClick('HR Management')} />
                                 </NavDropdown>
 
                                 <NavItem icon={<Users size={20} />} label="Hotels" active={activeTab === 'Hotels'} onClick={() => handleNavClick('Hotels')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<CreditCard size={20} />} label="Payments" active={activeTab === 'Payments' || activeTab === 'Payments/Add'} onClick={() => handleNavClick('Payments')} isOpen={isSidebarOpen} />
                                 <NavItem icon={<ClipboardList size={20} />} label="Pax Movement" active={activeTab === 'Pax Movement'} onClick={() => handleNavClick('Pax Movement')} isOpen={isSidebarOpen} />
                             </>
-                        )}
-                    </NavGroup>
-                </nav>
+                        )
+                        }
+                    </NavGroup >
+                </nav >
 
                 {/* Footer */}
-                <div className="p-4 border-t bg-slate-50 shrink-0 relative">
+                < div className="p-4 border-t bg-slate-50 shrink-0 relative" >
                     {isUserMenuOpen && isSidebarOpen && (
                         <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-200 z-[60]">
                             <button
@@ -145,8 +147,8 @@ export default function Sidebar({ activeTab, setActiveTab, isSidebarOpen, setSid
                             <ChevronUp size={16} className={`text-slate-300 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
                         )}
                     </div>
-                </div>
-            </aside>
+                </div >
+            </aside >
         </>
     );
 }
