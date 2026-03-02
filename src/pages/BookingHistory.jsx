@@ -10,29 +10,27 @@ import GroupTicketInvoice from './GroupTicketInvoice';
 
 const API = 'http://localhost:8000';
 
-// --- Countdown Timer Component ---
-const CountdownTimer = ({ deadline, paymentStatus }) => {
-    const [timeLeft, setTimeLeft] = useState('');
+// --- Payment Cell: shows live countdown while unpaid+running, badge otherwise ---
+const PaymentCell = ({ deadline, paymentStatus }) => {
+    const [timeLeft, setTimeLeft] = useState(null);
 
-    const paymentSubmitted = paymentStatus === 'pending' || paymentStatus === 'paid';
+    const isSettled = paymentStatus === 'pending' || paymentStatus === 'paid';
 
     useEffect(() => {
-        // If payment already submitted, no need to run the timer
-        if (paymentSubmitted) return;
-        if (!deadline || deadline === '-') {
-            setTimeLeft('-');
+        if (isSettled || !deadline || deadline === '-') {
+            setTimeLeft('done');
             return;
         }
 
         const target = new Date(deadline).getTime();
 
         const updateTimer = () => {
-            const now = new Date().getTime();
+            const now = Date.now();
             const diff = target - now;
-            if (diff <= 0) { setTimeLeft('EXPIRED'); return; }
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            if (diff <= 0) { setTimeLeft('done'); return; }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
             setTimeLeft(`${h}h ${m}m ${s}s`);
         };
 
@@ -41,26 +39,31 @@ const CountdownTimer = ({ deadline, paymentStatus }) => {
         return () => clearInterval(timer);
     }, [deadline, paymentStatus]);
 
-    // Agent has submitted payment — show static badge, timer irrelevant
-    if (paymentSubmitted) {
+    // Timer is still counting down — show ONLY the timer
+    if (timeLeft && timeLeft !== 'done') {
         return (
-            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-black text-[11px]">
-                <CheckCircle size={12} />
-                Payment Submitted
+            <span className="text-blue-600 font-black tabular-nums flex items-center gap-1.5 text-[10px]">
+                <Clock size={11} className="animate-pulse" />
+                {timeLeft}
             </span>
         );
     }
 
-    if (timeLeft === 'EXPIRED') return <span className="text-rose-500 font-black">EXPIRED</span>;
-    if (timeLeft === '-') return <span className="text-slate-300">-</span>;
-
+    // Timer done / settled / no deadline — show ONLY the payment badge
+    const s = String(paymentStatus || 'unpaid').toLowerCase();
+    const isPaid = s === 'paid' || s === 'completed';
+    const isPending = s === 'pending';
     return (
-        <span className="text-blue-600 font-black tabular-nums flex items-center gap-1.5">
-            <Clock size={12} className="animate-pulse" />
-            {timeLeft}
+        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${
+            isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+            : isPending ? 'bg-amber-50 text-amber-600 border-amber-100'
+            : 'bg-slate-50 text-slate-400 border-slate-100'
+        }`}>
+            {isPaid ? 'Paid' : isPending ? 'Pending' : 'Unpaid'}
         </span>
     );
 };
+
 
 
 
@@ -194,7 +197,8 @@ export default function BookingHistory() {
     const tabs = ['Groups Tickets', 'UMRAH BOOKINGS', 'Custom Umrah Bookings'];
     const isGroupTab = activeTab === 'Groups Tickets';
 
-    const token = () => localStorage.getItem('branch_access_token');
+    // Support both branch direct login (branch_access_token) and employee login (access_token)
+    const token = () => localStorage.getItem('branch_access_token') || localStorage.getItem('access_token');
 
     // Fetch Bookings Based on Active Tab
     useEffect(() => {
@@ -268,7 +272,8 @@ export default function BookingHistory() {
             booked_by: b.booked_by_name || 'Branch',
             expiry,
             status,
-            payment_status: b.payment_status || 'unpaid',
+            // payment_status can live at top-level OR nested inside payment_details (ticket bookings)
+            payment_status: b.payment_status || b.payment_details?.payment_status || 'unpaid',
             amount,
             raw: b
         };
@@ -439,9 +444,9 @@ export default function BookingHistory() {
                                         {b.booked_by}
                                     </div>
 
-                                    {/* Payment Status */}
+                                    {/* Payment / Timer cell */}
                                     <div className="flex justify-center">
-                                        <PaymentStatusBadge status={b.payment_status} />
+                                        <PaymentCell deadline={b.expiry} paymentStatus={b.payment_status} />
                                     </div>
 
                                     {/* Status */}
@@ -468,13 +473,13 @@ export default function BookingHistory() {
                                                 {(() => {
                                                     const raw = b.raw || {};
                                                     const st = String(b.status || '').toLowerCase();
-                                                    const pSt = String(raw.payment_status || '').toLowerCase();
-                                                    const pStatus = String(raw.paymentStatus || '').toLowerCase();
+                                                    // payment_status may be at top-level OR nested inside payment_details (ticket bookings)
+                                                    const pSt = String(raw.payment_status || raw.payment_details?.payment_status || '').toLowerCase();
                                                     const bSt = String(raw.booking_status || '').toLowerCase();
 
-                                                    const isUnderProcess = ['underprocess', 'pending', 'under_process'].includes(st);
-                                                    const isPaid = ['paid', 'completed'].includes(pSt) || ['paid', 'completed'].includes(pStatus) || ['paid', 'completed'].includes(st) || ['paid', 'completed'].includes(bSt);
-                                                    const isSubmitted = ['payment submitted', 'submitted', 'pending'].includes(pSt) || ['payment submitted', 'submitted', 'pending'].includes(pStatus) || ['payment submitted', 'submitted', 'pending'].includes(st);
+                                                    const isUnderProcess = ['underprocess', 'pending', 'under_process'].includes(st) || ['underprocess', 'under_process'].includes(bSt);
+                                                    const isPaid = ['paid', 'completed'].includes(pSt);
+                                                    const isSubmitted = ['payment submitted', 'submitted', 'pending'].includes(pSt);
 
                                                     return isUnderProcess && !isPaid && !isSubmitted;
                                                 })() && (

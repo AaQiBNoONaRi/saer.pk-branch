@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 
 const getAuthHeader = () => {
-    const token = localStorage.getItem('branch_access_token');
+    // Branch direct login uses 'branch_access_token', employees use 'access_token'
+    const token = localStorage.getItem('branch_access_token') || localStorage.getItem('access_token');
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

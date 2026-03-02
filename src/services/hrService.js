@@ -332,6 +332,16 @@ export const getEmployeeLedger = async (empId, startDate = null, endDate = null)
     return response.json();
 };
 
+// ===================== Commissions =====================
+// employeeMongoId = the employee's MongoDB _id (not emp_id), used as earner_id in commission records
+export const getEmployeeCommissions = async (employeeMongoId) => {
+    const response = await fetch(`${API_BASE_URL}/commission-records?earner_id=${employeeMongoId}&limit=200`, {
+        headers: getAuthHeader()
+    });
+    if (!response.ok) throw new Error('Failed to fetch employee commissions');
+    return response.json();
+};
+
 // ===================== Punctuality =====================
 export const getPunctualityAnalytics = async (filters = {}) => {
     const params = new URLSearchParams();

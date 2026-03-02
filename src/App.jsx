@@ -26,6 +26,9 @@ import UmrahBookingPage from './pages/UmrahBookingPage';
 import BookingPage from './pages/BookingPage';
 import PaxMovement from './pages/PaxMovement';
 import CommissionEarnings from './pages/CommissionEarnings';
+import Payments from './pages/Payments';
+import AddBankAccount from './pages/AddBankAccount';
+import Dashboard from './pages/Dashboard';
 
 // --- SHARED UI COMPONENTS ---
 
@@ -116,7 +119,9 @@ const OrderStatusTracker = ({ label, total, done, booked, cancelled }) => {
 
 // --- PAGE COMPONENTS ---
 
-const DashboardPage = () => (
+const DashboardPage = Dashboard; // live component — see pages/Dashboard.jsx
+
+const _UNUSED_DashboardPageOLD = () => (
   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <KpiCard
@@ -253,6 +258,7 @@ const App = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedBookingType, setSelectedBookingType] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [resumeId, setResumeId] = useState(null);
 
   // Check auth on mount
   useEffect(() => {
@@ -265,6 +271,20 @@ const App = () => {
         // Determine stored type — employee_data in localStorage means employee
         const type = localStorage.getItem('employee_data') ? 'employee' : 'branch';
         setUserType(type);
+
+        // Check for resume parameters
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        const resume = params.get('resume');
+
+        if (tab && resume) {
+          setResumeId(resume);
+          if (tab === 'ticket') setCurrentPage('Ticket Booking');
+          if (tab === 'umrah') setCurrentPage('Umrah Package Booking');
+          if (tab === 'custom') setCurrentPage('Custom Umrah Booking');
+
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       } else {
         setIsLoggedIn(false);
       }
@@ -324,7 +344,7 @@ const App = () => {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'Dashboard': return <DashboardPage />;
+      case 'Dashboard': return <Dashboard />;
 
       // Inventory
       case 'Inventory/Packages': return <PackageInventory />;
@@ -342,9 +362,10 @@ const App = () => {
           }} />;
       case 'Custom Umrah Booking':
         return <CustomBookingPage
-          customBookingData={customBookingData}
+          resumeId={resumeId}
+          calculatorData={customBookingData}
           serviceChargeRule={serviceChargeRule}
-          onBack={() => setCurrentPage('Custom Umrah')}
+          onBack={() => { setResumeId(null); setCurrentPage('Custom Umrah'); }}
         />;
       case 'Umrah Package':
         return <UmrahPackagePage
@@ -357,11 +378,12 @@ const App = () => {
           }} />;
       case 'Umrah Package Booking':
         return <UmrahBookingPage
+          resumeId={resumeId}
           packageData={selectedPackage}
           flights={bookingFlights}
           airlines={bookingAirlines}
           serviceChargeRule={serviceChargeRule}
-          onBack={() => setCurrentPage('Umrah Package')}
+          onBack={() => { setResumeId(null); setCurrentPage('Umrah Package'); }}
         />;
       case 'Ticket':
         return <TicketPage
@@ -372,9 +394,10 @@ const App = () => {
           }} />;
       case 'Ticket Booking':
         return <BookingPage
-          selectedTicket={selectedTicket}
+          resumeId={resumeId}
+          bookingData={selectedTicket}
           serviceChargeRule={serviceChargeRule}
-          onBack={() => setCurrentPage('Ticket')}
+          onBack={() => { setResumeId(null); setCurrentPage('Ticket'); }}
         />;
       case 'Agencies': return <AgencyManagement />;
       case 'Employees': return <BranchEmployeeManagement />;
@@ -382,6 +405,18 @@ const App = () => {
       case 'Commission Earnings': return <CommissionEarnings />;
       case 'Booking History': return <BookingHistory />;
       case 'Pax Movement': return <PaxMovement />;
+
+      // Payments
+      case 'Payments':
+        return <Payments
+          onAddAccount={() => { setEditingAccount(null); setCurrentPage('Payments/Add'); }}
+          onEditAccount={(acc) => { setEditingAccount(acc); setCurrentPage('Payments/Add'); }}
+        />;
+      case 'Payments/Add':
+        return <AddBankAccount
+          editingAccount={editingAccount}
+          onBack={() => { setEditingAccount(null); setCurrentPage('Payments'); }}
+        />;
 
       // Default / Placeholder
       default: return (

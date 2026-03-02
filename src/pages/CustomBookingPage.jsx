@@ -562,7 +562,8 @@ const StepThreePayment = ({
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const token = localStorage.getItem('branch_access_token');
+        // Branch direct login uses 'branch_access_token', branch employees use 'access_token'
+        const token = localStorage.getItem('branch_access_token') || localStorage.getItem('access_token');
         const res = await fetch(`${API}/api/bank-accounts/?include_system=true`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -585,7 +586,7 @@ const StepThreePayment = ({
   const handleConfirmOrder = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('branch_access_token');
+      const token = localStorage.getItem('branch_access_token') || localStorage.getItem('access_token');
       const id = booking._id || booking.id;
 
       if (!paymentData.amount || paymentData.amount <= 0) {
