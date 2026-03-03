@@ -260,4 +260,65 @@ export const commissionAPI = {
     }
 };
 
+// ─── Branch RBAC API ──────────────────────────────────────────────────────────
+export const rbacAPI = {
+    /** Full permission catalogue grouped by module */
+    getCatalogue: async () => {
+        const response = await api.get('/api/branch-roles/catalogue');
+        return response.data;
+    },
+
+    /** List roles for a branch (includes org-wide templates) */
+    getRoles: async (branchId, organizationId) => {
+        const params = { include_org_wide: true };
+        if (branchId) params.branch_id = branchId;
+        if (organizationId) params.organization_id = organizationId;
+        const response = await api.get('/api/branch-roles/', { params });
+        return response.data;
+    },
+
+    /** Seed predefined roles for an org/branch */
+    seedRoles: async (orgId, branchId) => {
+        const params = branchId ? { branch_id: branchId } : {};
+        const response = await api.post(`/api/branch-roles/seed/${orgId}`, null, { params });
+        return response.data;
+    },
+
+    /** Assign role to employee */
+    assignRole: async (roleId, employeeId, branchId) => {
+        const response = await api.patch(
+            `/api/branch-roles/${roleId}/assign/${employeeId}`,
+            null,
+            { params: { branch_id: branchId } }
+        );
+        return response.data;
+    },
+
+    /** Get raw permission override for an employee */
+    getOverride: async (employeeId, branchId) => {
+        const response = await api.get(`/api/employee-permissions/${employeeId}/override`, {
+            params: { branch_id: branchId }
+        });
+        return response.data;
+    },
+
+    /** Upsert permission override (granted + revoked lists) */
+    upsertOverride: async (employeeId, branchId, organizationId, granted, revoked, note = '') => {
+        const response = await api.put(
+            `/api/employee-permissions/${employeeId}/override`,
+            { granted, revoked, note },
+            { params: { branch_id: branchId, organization_id: organizationId } }
+        );
+        return response.data;
+    },
+
+    /** Remove override – employee reverts to pure role permissions */
+    deleteOverride: async (employeeId, branchId) => {
+        const response = await api.delete(`/api/employee-permissions/${employeeId}/override`, {
+            params: { branch_id: branchId }
+        });
+        return response.data;
+    },
+};
+
 export default api;

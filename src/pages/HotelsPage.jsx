@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 const PhotoGallery = ({ photos, isOpen, onClose, hotelName }) => {
@@ -81,7 +81,8 @@ export default function HotelsPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('branch_access_token');
-      const response = await fetch('http://localhost:8000/api/hotels', {
+      // Fix: add trailing slash and use relative URL or import API_BASE if needed. We'll use the API instance from services if we can, but let's just use the correct endpoint.
+      const response = await fetch('http://localhost:8000/api/hotels/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -172,7 +173,6 @@ export default function HotelsPage() {
                 <th className="px-3 py-3 font-semibold text-gray-700">Double Price</th>
                 <th className="px-3 py-3 font-semibold text-gray-700">Pictures</th>
                 <th className="px-3 py-3 font-semibold text-gray-700">Location</th>
-                <th className="px-3 py-3 font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -238,12 +238,6 @@ export default function HotelsPage() {
                           Map
                         </a>
                       ) : 'N/A'}
-                    </td>
-                    <td className="px-3 py-2 align-top">
-                      <div className="flex gap-2">
-                        <button className="text-sm text-blue-600 hover:underline">Edit</button>
-                        <button className="text-sm text-red-600 hover:underline">Delete</button>
-                      </div>
                     </td>
                   </tr>
                 );

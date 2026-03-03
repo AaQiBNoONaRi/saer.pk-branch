@@ -14,6 +14,7 @@ import AgencyManagement from './pages/AgencyManagement';
 import BranchEmployeeManagement from './pages/BranchEmployeeManagement';
 import FlightInventory from './pages/FlightInventory';
 import HotelInventory from './pages/HotelInventory';
+import HotelsPage from './pages/HotelsPage';
 import PackageInventory from './pages/PackageInventory';
 import TicketInventory from './pages/TicketInventory';
 import BookingHistory from './pages/BookingHistory';
@@ -348,7 +349,7 @@ const App = () => {
 
       // Inventory
       case 'Inventory/Packages': return <PackageInventory />;
-      case 'Inventory/Hotels': return <HotelInventory />;
+      case 'Hotels': return <HotelsPage />;
       case 'Inventory/Tickets': return <TicketInventory />;
       case 'Inventory/Flights': return <FlightInventory />;
 
